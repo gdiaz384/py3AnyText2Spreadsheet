@@ -98,8 +98,8 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
         print (type(inputFileContentsJSON))
         print( str(inputFileContentsJSON).encode(consoleEncoding) )
 
-    
 #    sys.exit(1)
+
     entryNumber=0
     # inputFileContentsJSON is a list.
     for entry  in inputFileContentsJSON:
@@ -117,19 +117,14 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
         # Once dictionary has finished processing a list entry, append the entry to temporaryList and increment entryNumber.
         temporaryList.append( [ tempDialogueLine, tempSpeaker, str(entryNumber) ] )
-        #temporaryList.append( [ tempDialogueLine ] )
-
 
         #Old debug code.
         #print( 'key=' + key )
         #print( 'value=' + value )
 
-
     if debug == True:
         print( str(temporaryList).encode(consoleEncoding) )
-    #sys.exit(0)
-
-
+        #sys.exit(0)
 
     print( ('Finished reading input of:' + fileNameWithPath).encode(consoleEncoding))
 
@@ -146,13 +141,13 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
     mySpreadsheet=chocolate.Strawberry()
 
     # Very important: Create the correct header.
-    #mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
+    mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
 
     # Add data entries.
     for entry in temporaryList:
         lengthOfEntry=len(entry)
-        #mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] + metadataDelimiter + entry[3] ])
-        mySpreadsheet.appendRow( [ entry[0] ])
+        mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] + metadataDelimiter + entry[3] ])
+
     if debug == True:
         mySpreadsheet.printAllTheThings()
 

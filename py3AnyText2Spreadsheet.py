@@ -17,7 +17,7 @@ But if called directly as 'python py3Any2Spreadsheet.py --file input', then it s
 Credit: gdiaz384
 License: APGLv3 
 """
-__version__='2024Feb29'
+__version__='2024Feb29 - alpha'
 
 
 # Set defaults.
@@ -330,7 +330,7 @@ def validateUserInput(userInput):
     if userInput[ 'characterDictionaryEncoding' ] == None:
         userInput[ 'characterDictionaryEncoding' ] = defaultTextFileEncoding
 
-    userInput[ 'characterDictionary' ]=None
+    userInput[ 'characterDictionaryFileName' ]=None
     if userInput[ 'characterDictionaryFileName' ] != None:
         if checkIfThisFileExists( userInput[ 'characterDictionaryFileName' ] ) == True:
             #Read in character dictionary
@@ -353,9 +353,9 @@ def validateUserInput(userInput):
                         if line[1] == '':
                             line[1] = None
                         tempDict[line[0]]=line[1]
-                userInput[ 'characterDictionary' ]=tempDict
+                userInput[ 'characterDictionaryFileName' ]=tempDict
         else:
-            print( 'Warning: characterDictionary file was specified but does not exist:' )
+            print( 'Warning: characterDictionaryFileName file was specified but does not exist:' )
             print( ( userInput[ 'characterDictionaryFileName' ] ).encode(consoleEncoding) )
             userInput[ 'characterDictionaryFileName' ] = None
 
@@ -370,7 +370,7 @@ def validateUserInput(userInput):
     debug=userInput[ 'debug' ]
 
     if debug == True:
-        print( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) )
+        print( 'userInput[characterDictionaryFileName]=' + str( userInput[ 'characterDictionaryFileName' ] ) )
 
     return userInput
 
@@ -392,7 +392,7 @@ def parse(rawFileNameAndPath, parsingScript, rawFileEncoding=defaultTextFileEnco
     # This is ideal because: 
     # 1. Weird file system names that are not valid module names are then no longer an issue,
     # 2. Trying to resolve paths and importing above parent directory from __main__ is no longer an issue,
-    # 3. The importlib library to handle special import handling is no longer necessary. However, shutil.copy2 becomes necessary to copy the code. The alternative to shutil is platform specific code with the os module, or opening the file and copying the contents manually.
+    # 3. The importlib library to handle special import handling is no longer necessary. However, shutil.copy becomes necessary to copy the code. The alternative to shutil is platform specific code with the os module, or opening the file and copying the contents manually.
     # 4. scratchpad is already labeled as a temporary directory in git.
     pathlib.Path( str(pathlib.Path(tempParseScriptPathAndName).resolve().parent) ).mkdir( parents = True, exist_ok = True )
 
@@ -441,11 +441,11 @@ def parse(rawFileNameAndPath, parsingScript, rawFileEncoding=defaultTextFileEnco
     if parseSettingsDictionary != None:
         # Usage: customParser.input('A01.ks', ...)
                                                 #def input( fileNameWithPath, parseSettingsDictionary, fileEncoding=defaultTextEncoding, charaNamesDict=None):
-        spreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, charaNamesDict=characterDictionary)
+        spreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, charaNamesDict=characterDictionaryFileName)
     #elif parseSettingsDictionary == None:
     else:
         # This syntax assumes there is no parseSettings.ini since that is defined within the file. If parseSettings.ini is required, then this syntax will fail.
-        spreadsheet = customParser.input(rawFileNameAndPath, fileEncoding=rawFileEncoding, charaNamesDict=characterDictionary)
+        spreadsheet = customParser.input(rawFileNameAndPath, fileEncoding=rawFileEncoding, charaNamesDict=characterDictionaryFileName)
 
     if (debug == True) and (spreadsheet != None):
         spreadsheet.printAllTheThings()
@@ -476,7 +476,7 @@ def main():
                 parsingScriptEncoding=userInput['parsingScriptEncoding'],
                 parseSettingsFile=userInput[ 'parseSettingsFile' ],
                 parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ],
-                characterDictionary=userInput[ 'characterDictionary' ]
+                characterDictionaryFileName=userInput[ 'characterDictionaryFileName' ]
         )
 
         assert( isinstance( spreadsheet, chocolate.Strawberry )  )
@@ -499,10 +499,24 @@ def main():
             sys.exit(1)
         # Writing operations are always scary, so spreadsheet.exportTo() should always print when it is writing output internally. No need to do it again here.
 
-    elif userInput['mode'] == output:
+    elif userInput['mode'] == 'output':
         # parseOutput()
         #parser.output('A01.ks',)
-        print('Hello, world!')
+        spreadsheet=output(
+                userInput['rawFileName'], 
+                userInput['parsingScript'], 
+                rawFileEncoding=userInput['rawFileEncoding'],
+                parsingScriptEncoding=userInput['parsingScriptEncoding'],
+                parseSettingsFile=userInput[ 'parseSettingsFile' ],
+                parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ],
+                characterDictionaryFileName=userInput[ 'characterDictionaryFileName' ]
+        )
+        #userInput exists
+
+        # Need to convert spreadsheet to a chocolate.Strawberry(), using specified encoding
+        # Need to pass in rawFileName as-is. Need to pass parsingScript as-is.
+
+
 
 
 if __name__ == '__main__':
