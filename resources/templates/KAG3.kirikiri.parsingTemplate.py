@@ -67,10 +67,16 @@ else:
 # Newer list approach: In other words, [ [ ], [ ] , [ ], [ ] ] would make more sense. A single list, then each entry in that list is a list containing strings or None entries. Each entry is: dialogue, speaker, lineCount, lineNumberOfDialogue.
 
 #def importFromTextFile():
-def input( fileNameWithPath, parseSettingsDictionary, fileEncoding=defaultTextEncoding, charaNamesDict=None):
-    # A better name for charaNamesDict at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
+# A better name for charaNamesDict at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
+def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, charaNamesDict=None):
 
     # parseSettingsDictionary must exist. It can either be defined within this file or imported.
+    if parseSettingsDictionary == None:
+        print( 'Error: parseSettingsDictionary must exist.' ) 
+        sys.exit(1)
+    if not isinstance(parseSettingsDictionary, dict):
+        print( 'Error: parseSettingsDictionary is not a Python dictionary:' + str(type(parseSettingsDictionary)) )
+
     # charaNamesDict may or may not exist, so set it to None by default.
     #The file has already been checked to exist and the encoding correctly determined, so just open it and read contents into a string. Then use that epicly long string for processing.
     # Alternative method: https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects

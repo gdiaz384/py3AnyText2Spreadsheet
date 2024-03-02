@@ -50,7 +50,7 @@ TODO: This section.
 
 ## Installation guide
 
-`Current version: 0.1 - 2024Feb29 alpha`
+`Current version: 0.1 - 2024Mar01 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 

@@ -14,7 +14,7 @@ parsingScript='templates\JSON.VNTranslationTools.py'
 
 License: See main program.
 """
-__version__ = '2024Feb29'
+__version__ = '2024Mar01'
 
 
 # Set program defaults.
@@ -58,35 +58,30 @@ else:
 # Newer list approach: In other words, [ [ ], [ ] , [ ], [ ] ] would make more sense. A single list, then each entry in that list is a list containing strings or None entries. Each entry is: dialogue, speaker, lineCount, lineNumberOfDialogue.
 
 # parseSettingsDictionary is not needed for this parsing technique. It can either be defined within this file or imported.
-# charaNamesDict may or may not exist, so set it to None by default.
-# A better name for charaNamesDict at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
-def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, charaNamesDict=None):
+# characterDictionary may or may not exist, so set it to None by default.
+# A better name for characterDictionary at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
+def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 
     #By this point, the file has already been checked to exist and the encoding correctly determined, so just open it and read contents into a string. Then use that epicly long string for processing.
     # Alternative method that keeps the file open for a long time but uses less memory: https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects
-    with open( fileNameWithPath, encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+    with open( fileNameWithPath, 'r', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
         #inputFileContents = myFileHandle.read()
         #inputFileContentsJSON = myFileHandle.read()
         inputFileContentsJSON = json.loads(myFileHandle.read())
         #inputFileContentsJSONRaw = json.loads(myFileHandle.read())
 
-    #temporaryDict={}        #Dictionaries do not allow duplicates, so insert all entries into a dictionary first to de-duplicate entries, then read dictionary into first column (skip first line/row in target spreadsheet) Syntax:
-    #thisdict.update({"x": "y"}) #add to/update dictionary
-    #thisdict["x"]="y"              #add to/update dictionary
-    #for x, y in thisdict.items():
-    #  print(x, y)
     temporaryList=[]
 
     # The actual json takes the form of [ {"message" : "value"}, {"name" : "the name", "message" : "value"} ]
     # So, a list where each entry in the list is a dictionary.
 
-    try:
-        pass
+#    try:
+#        pass
         #inputFileContentsJSON=json.JSONDecoder.decode(inputFileContentsJSONRaw)
-    except json.JSONDecodeError:
-        print( 'Error: There was an error decoding json from the following file:' )
-        print( fileNameWithPath.encode(consoleEncoding) )
-        sys.exit(1)
+#    except json.JSONDecodeError:
+#        print( 'Error: There was an error decoding json from the following file:' )
+#        print( fileNameWithPath.encode(consoleEncoding) )
+#        sys.exit(1)
 
     if debug == True:
         print( type( inputFileContentsJSON ) )  #This is a list
@@ -117,6 +112,7 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
         # Once dictionary has finished processing a list entry, append the entry to temporaryList and increment entryNumber.
         temporaryList.append( [ tempDialogueLine, tempSpeaker, str(entryNumber) ] )
+        entryNumber += 1
 
         #Old debug code.
         #print( 'key=' + key )
@@ -156,15 +152,23 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
 # exportToTextFile
-def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, charaNamesDict=None):
-    print('Hello, world!')
-    sys.exit(1)
+def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+    #print('Hello, world!')
+    #sys.exit(1)
+
+    assert isinstance(mySpreadsheet, chocolate.Strawberry)
 
     # Read original json into a string.
-    with open( fileNameWithPath, encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+    with open( fileNameWithPath, 'r', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
         inputFileContents = myFileHandle.read()
         #inputFileContentsJSON = myFileHandle.read()
         #inputFileContentsJSON = json.loads(myFileHandle.read())
+
+    #replace any contents of column A in the string with column B. In the literal strings, new lines should be replaced as \r\n , not just \n when writing back to file. How?
+   
+    # if \n in original string
+        # Then create new temporary ColumnB string based upon breaking up \n, then replace \n with \\r\\n in the string, then replace. That should output \r\n in the file. #If there is no \n, then whatever, just replace as-us and print Warning about it to standard output.
+        # Should probably also update logic to handle word wrap.
 
     columnA=mySpreadsheet.getColumn('A')
     columnB=mySpreadsheet.getColumn('B')
@@ -172,34 +176,50 @@ def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEn
     counter=0
     #for every line/row in Strawberry()
     for entry in columnA:
-        if inputFileContents.find( columnA[counter].strip() ) != -1:
-            print('Replacing:')
-            print( ( columnA[counter].strip() ).encode(consoleEncoding) )
-            print('With:')
-            print( ( columnB[counter].strip() ).encode(consoleEncoding) )
-            #Replace here
-            #inputFileContents.replace(columnA[counter].strip(), columnB[counter].strip())
-            if (columnA[counter].strip().find('\n') != -1 ) and (columnB[counter].strip().find('\n') != -1 ):
-                print('pies')
+        input=columnA[counter].strip()
+        output=columnB[counter].strip()
+
+        if inputFileContents.find( input ) != -1:
+            if verbose == True:
+                print('Replacing literal:')
+            if debug == True:
+                print( ( input ).encode(consoleEncoding) )
+                print('With:')
+                print( ( output ).encode(consoleEncoding) )
+            # Replace here.
+            inputFileContents=inputFileContents.replace(input, output)
+
+      # elif there was not a match, then try replacing new line character in input string with \\r\\n and see if it matches.
+        elif inputFileContents.find( input.replace('\n','\\r\\n') ) != -1:
+            #print('match found replacing \\n with literal \\r\\n')
+
+            # If there is a match, then update the input, and perform the replacement.
+            input=input.replace('\n','\\r\\n')
+            # Fix the output as well to replace any line breaks with psudo-line breaks.
+            output=output.replace('\n','\\r\\n')
+            inputFileContents=inputFileContents.replace(input, output)
+            if verbose == True:
+                print('Replacing after replacing \\n with \\r\\n:')
+            if debug == True:
+                print( ( input ).encode(consoleEncoding) )
+                print('With:')
+                print( ( output ).encode(consoleEncoding) )
+
+        elif inputFileContents.find( columnA[counter].strip().replace('\n','\r\n') ) != -1:
+            print( 'Warning: match found replacing \\n with non-literal \\r\\n' )
+            print( 'Warning: No replacement performed.' )
+
+#splitlines()
+#startswith('aaa')
+
         else:
-            print( ( 'Warning: Entry not found. ' + columnA[counter].strip() ).encode(consoleEncoding) )
+            print( ( 'Runtime error: Entry not found: ' + columnA[counter].strip() ).encode(consoleEncoding) )
+        counter += 1
 
+    # This should actually be "postTranslatedDictionary" or maybe post writing to file dictionary. This only replaces character names currently oddly fits the dictionary name better than intended.
+    if characterDictionary != None:
+        for rawName, translatedName in characterDictionary.items():
+            inputFileContents=inputFileContents.replace(rawName,translatedName)
 
-        #if column A does not have does not contain any entries in doNotProcessMe
-        #then replace any contents of column A in the string with column B. In the literal strings, new lines should be replaced as \r\n , not just \n when writing back to file. How?
-        
-        # if \n in original string
-            # Then create new temporary ColumnB string based upon breaking up \n, then replace \n with \\r\\n in the string, then replace. That should output \r\n in the file. #If there is no \n, then whatever, just replace as-us and print Warning about it to standard output.
-            # Should probably also update logic to handle word wrap.
-
-
-
-
-
-
-
-
-
-
-
+    return inputFileContents
 
