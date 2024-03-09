@@ -438,9 +438,8 @@ def parseRawFile(
     # 4. scratchpad is already labeled as a temporary directory in git.
     global tempParseScriptPathAndName
     tempParseScriptPathAndName = str( pathlib.Path(__file__).resolve().parent ) + '/' + tempParseScriptPathAndName
-    print( 'tempParseScriptPathAndName=' + tempParseScriptPathAndName)
+    #print( 'tempParseScriptPathAndName=' + tempParseScriptPathAndName)
 
-    #pathlib.Path( str( pathlib.Path( tempParseScriptPathAndName ).resolve().parent) ).mkdir( parents = True, exist_ok = True )
     pathlib.Path( tempParseScriptPathAndName ).resolve().parent.mkdir( parents = True, exist_ok = True )
 
     if debug == True:
@@ -483,7 +482,7 @@ def parseRawFile(
     #print( 'customParser.__version__=' + str(customParser.__version__) )
     #print(str(dir(customParser) ))
 
-    parseSettingsDictionary=getParseSettingsDictionary(parsingScript, parseSettingsFile=userInput[ 'parseSettingsFile' ], parseSettingsFileEncoding=parseSettingsFileEncoding)
+    parseSettingsDictionary=getParseSettingsDictionary(parsingScript, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding)
 
     mySpreadsheet=None
     if parseSettingsDictionary != None:
