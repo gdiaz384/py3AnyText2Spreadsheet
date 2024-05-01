@@ -8,7 +8,7 @@ Usage: See below. Like at the bottom.
 License: See main program.
 
 """
-__version__='2024Feb27'
+__version__='2024Mar18'
 
 #set defaults
 printStuff=True
@@ -393,6 +393,7 @@ class Strawberry:
                 for cell in row:
                     tempList.append( str(cell) )
                 myCsvHandle.writerow(tempList)
+        print( ('Wrote: '+fileNameWithPath).encode(consoleEncoding) )
 
 
     def importFromXLSX(self, fileNameWithPath, fileEncoding=defaultTextFileEncoding):

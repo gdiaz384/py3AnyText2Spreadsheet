@@ -14,7 +14,7 @@ parsingScript='templates\JSON.VNTranslationTools.py'
 
 License: See main program.
 """
-__version__ = '2024Mar01'
+__version__ = '2024.05.01'
 
 
 # Set program defaults.
@@ -62,26 +62,21 @@ else:
 # A better name for characterDictionary at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
 def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 
+    if debug == True:
+        print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
+
     #By this point, the file has already been checked to exist and the encoding correctly determined, so just open it and read contents into a string. Then use that epicly long string for processing.
     # Alternative method that keeps the file open for a long time but uses less memory: https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects
     with open( fileNameWithPath, 'r', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
         #inputFileContents = myFileHandle.read()
         #inputFileContentsJSON = myFileHandle.read()
-        inputFileContentsJSON = json.loads(myFileHandle.read())
+        inputFileContentsJSON = json.loads( myFileHandle.read() )
         #inputFileContentsJSONRaw = json.loads(myFileHandle.read())
 
     temporaryList=[]
 
     # The actual json takes the form of [ {"message" : "value"}, {"name" : "the name", "message" : "value"} ]
     # So, a list where each entry in the list is a dictionary.
-
-#    try:
-#        pass
-        #inputFileContentsJSON=json.JSONDecoder.decode(inputFileContentsJSONRaw)
-#    except json.JSONDecodeError:
-#        print( 'Error: There was an error decoding json from the following file:' )
-#        print( fileNameWithPath.encode(consoleEncoding) )
-#        sys.exit(1)
 
     if debug == True:
         print( type( inputFileContentsJSON ) )  #This is a list
@@ -95,9 +90,8 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
 #    sys.exit(1)
 
-    entryNumber=0
     # inputFileContentsJSON is a list.
-    for entry  in inputFileContentsJSON:
+    for entryNumber,entry in enumerate(inputFileContentsJSON):
         tempDialogueLine=''
         tempSpeaker=None
 
@@ -110,9 +104,15 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
                 # Then add value as speaker.
                 tempSpeaker=value
 
+        # Update tempSpeaker with characterDictionary.
+        if (characterDictionary != None) and (tempSpeaker != None):
+            if tempSpeaker in characterDictionary.keys():
+                tempSpeaker = characterDictionary[ tempSpeaker ]
+            else:
+                print( ('Warning: The following speaker was not found in the character Dictionary:' + str(tempSpeaker) ).encode(consoleEncoding) )
+
         # Once dictionary has finished processing a list entry, append the entry to temporaryList and increment entryNumber.
         temporaryList.append( [ tempDialogueLine, tempSpeaker, str(entryNumber) ] )
-        entryNumber += 1
 
         #Old debug code.
         #print( 'key=' + key )
@@ -124,12 +124,6 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
     print( ('Finished reading input of:' + fileNameWithPath).encode(consoleEncoding))
 
-    #feed temporaryDictionary into spreadsheet #Edit: return dictionary instead.
-    #return temporaryDict
-    #for dialogue, metadata in temporaryDict.items():
-        #print(x, y)
-    #    self.appendRow([dialogue,metadata[0],metadata[1]])
-
     # Debug code.
     #sys.exit(0)
 
@@ -140,9 +134,10 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
     mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
 
     # Add data entries.
+
     for entry in temporaryList:
         lengthOfEntry=len(entry)
-        mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] + metadataDelimiter + entry[3] ])
+        mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] ])
 
     if debug == True:
         mySpreadsheet.printAllTheThings()

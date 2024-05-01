@@ -21,7 +21,7 @@ The project goals are to:
 - DDWSystem2013, DDWorks Game System, fwDDSystem, [vndb.org](https://vndb.org/r?f=fwDDSystem-)
 - JSON support:
     - Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to JSON.
-        - Is it possible to support .psb natively?
+        - Is it possible to support .psb natively with the FreeMote library?
     - Support for JSON where all entries and are nested under `contents` and there is no additional nesting.
         - Multiple entries must be in a list surrounded by square brackets `[ ]`.
     - To process additional types of JSON, open an issue and provide an `example.json`.
@@ -50,7 +50,7 @@ TODO: This section.
 
 ## Installation guide
 
-`Current version: 0.1 - 2024Mar01 alpha`
+`Current version: 0.1 - 2024Mar18 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
@@ -58,7 +58,7 @@ TODO: This section.
 
 ## Release Notes:
 
-- The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program. Yes, really.
+- The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program.
 - The parsingScript is copied to scratchpad\temp.py and importing scratchpad\temp.py is hardcoded because the parsingScript must be imported as a python module to be executed if it is going to be executed within the context of the main script. This makes sense because:
     1. it makes it possible import without worrying about path
     1. reduced conflicts in name since there are many unsupported
@@ -71,7 +71,7 @@ TODO: This section.
 ### Concept art:
 
 - The design concept behind py3AnyText2Spreadsheet is to create a platform that has a few predefined templates but mostly serves as a proxy for other parsers. The only limitation is that such parsers must somehow return a chocolate.Strawberry(), a spreadsheet, as a result so that it can be used for data processing.
-- In addition, this project also seperates out the script and text parsing logic from the translation logic of py3TranslateLLM and maintain them as seperate projects.
+- In addition, this project also seperates out the script and text parsing logic from the translation logic of py3TranslateLLM and in order to maintain them as seperate projects intended to be used together as part of a larger workflow.
 
 ### Regarding Settings Files:
 
@@ -127,7 +127,6 @@ TODO: This section.
 
 ## Regarding Python libraries:
 
-- Reccomended: If you do not want to deal with this, then use a binary file in the [releases](//github.com/gdiaz384/py3AnyText2Spreadsheet/releases) page instead
 - py3AnyText2Spreadsheet was developed on Python 3.7.6.
 - It is not necessarily clear what versions work with what other versions, in part due to the shenanigans of some developers creating deliberate incompatibilities, so just install whatever and hope it works.
 
@@ -135,7 +134,6 @@ Library name | Required, Reccomended, or Optional | Description | Install comman
 --- | --- | --- | --- | ---
 [openpyxl](//pypi.python.org/pypi/openpyxl) | Required. | Used for main data structure and Microsoft Excel Document (.xlsx) support. | `pip install openpyxl` | 3.1.2
 chocolate | Required. | Has various functions to manage using openpyxl as a data structure. | Included with py3AnyText2Spreadsheet. | Unversioned.
-py3AnyText2SpreadsheetFunctions | Required. | Has various helper functions unrelated to main data structure. | Included with py3AnyText2Spreadsheet. | Unversioned.
 dealWithEncoding | Required. | Handles text codecs and implements `chardet`. | Included with py3AnyText2Spreadsheet. | 0.1 2024Jan21.
 [chardet](//pypi.org/project/chardet) | Reccomended. | Improves text codec handling. | `pip install chardet` | 5.2.0
 [xlrd](//pypi.org/project/xlrd/) | Optional. | Provides reading from Microsoft Excel Document (.xls). | `pip install xlrd` | 2.0.1

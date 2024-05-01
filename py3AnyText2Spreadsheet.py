@@ -14,10 +14,9 @@ But if called directly as 'python py3Any2Spreadsheet.py --file input', then it s
 # That seperate program should probably support something like: https://github.com/Distributive-Network/PythonMonkey
 # For cross language support of parsing files. Then again, Python is very easy to use.
 
-Credit: gdiaz384
-License: APGLv3 
+Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
-__version__='2024Mar01 - alpha'
+__version__='2024.05.01.alpha'
 
 
 # Set defaults.
@@ -272,6 +271,7 @@ def validateUserInput(userInput):
         userInput[ 'mode' ] = 'output'
     else:
         print( ('Error: Mode must be input or output. Mode=' + userInput['mode']).encode(consoleEncoding) )
+        sys.exit(1)
 
     verifyThisFileExists( userInput[ 'rawFileName' ] )
     verifyThisFileExists( userInput[ 'parsingScript' ] )
@@ -622,7 +622,4 @@ def main():
 if __name__ == '__main__':
     main()
     sys.exit(0)
-
-# Print success message.
-print('pie10')
 
