@@ -14,6 +14,9 @@ But if called directly as 'python py3Any2Spreadsheet.py --file input', then it s
 # That seperate program should probably support something like: https://github.com/Distributive-Network/PythonMonkey
 # For cross language support of parsing files. Then again, Python is very easy to use.
 
+TODO: Alternatively, create a lot of Python specific parse files or engines that can do .srt, .epub, .ass, and so forth to and from spreadsheet formats.
+Is it even possible to parse XML and HTML without knowing the structure in advance? Well, web browsers do it, right? So it should be possible. Just blacklist everything in headers, all script tags, and keep track of the current cursor position or run the files through a normalizer first so each entry is on its own line to make it easier to parse.
+
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
 __version__='2024.05.01.alpha'
@@ -29,6 +32,7 @@ defaultTextEncodingForKSFiles='shift-jis'   # UCS2 BOM LE (aka UTF-16 LE) might 
 
 supportedExtensions=[ '.csv' , '.xlsx' , '.xls' , '.ods' ]
 defaultSpreadsheetExtension='.xlsx'
+defaultOutputColumn=4
 parseSettingsExtension='.ini'
 tempParseScriptPathAndName='scratchpad/temp.py'   # This is associated with a hardcoded import statment to as scratchpad\temp.py It is not possible to make this dynamic without importing an additional library.
 
@@ -41,7 +45,7 @@ assignmentOperatorInSettingsFile='='
 ignoreWhitespace=False
 
 unspecifiedError='Unspecified error in py3Any2Spreadsheet.py.'
-usageHelp=' Usage: python py3Any2Spreadsheet.py --help  Example: py3Any2Spreadsheet input myInputFile.ks parsingScript.py --rawFileEncoding shift-jis'
+usageHelp=' Usage: python py3Any2Spreadsheet.py --help  Example: py3Any2Spreadsheet input myInputFile.ks parsingProgram.py --rawFileEncoding shift-jis'
 
 
 # import stuff.
@@ -66,17 +70,17 @@ else:
 
 def createCommandLineOptions():
     # Add command line options.
-    commandLineParser=argparse.ArgumentParser(description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingScript.input() will be called. If mode is set to output, then parsingScript.output() will be called.' + usageHelp)
+    commandLineParser=argparse.ArgumentParser(description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingProgram.input() will be called. If mode is set to output, then parsingProgram.output() will be called.' + usageHelp)
     commandLineParser.add_argument('mode', help='Must be input or output.', type=str)
 
     commandLineParser.add_argument('rawFile', help='Specify the text file to parse.', type=str)
     commandLineParser.add_argument('-e','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str)
 
-    commandLineParser.add_argument('parsingScript', help='Specify the .py script that will be used to parse rawFile.', type=str)
-    commandLineParser.add_argument('-', '--parsingScriptEncoding', help='Specify the encoding of the parsingScript.', default=None,type=str)
+    commandLineParser.add_argument('parsingProgram', help='Specify the .py script that will be used to parse rawFile.', type=str)
+    commandLineParser.add_argument('-pse', '--parsingScriptEncoding', help='Specify the encoding of the parsingProgram.', default=None,type=str)
 
-    commandLineParser.add_argument('--parseSettingsFile', help='Optional .ini or .txt file to read settings file to convert to a settings dictionary.', default=None,type=str)
-    commandLineParser.add_argument('-pfe','--parseSettingsFileEncoding', help='Specify the encoding of parseSettingsFile.', default=None, type=str)
+    commandLineParser.add_argument('-psf','--parseSettingsFile', help='Optional .ini or .txt file to read settings file to convert to a settings dictionary.', default=None,type=str)
+    commandLineParser.add_argument('-psfe','--parseSettingsFileEncoding', help='Specify the encoding of parseSettingsFile.', default=None, type=str)
 
     commandLineParser.add_argument('-s','--spreadsheet', help='Specify the spreadsheet file to use. For mode=input, this is the file name that will contain the extracted strings. For mode=output, this is used to insert translated entries back into the original file. Must be .csv .xlsx .xls .ods', default=None, type=str)
     commandLineParser.add_argument('-se','--spreadsheetEncoding', help='Only valid for .csv files. Specify the encoding of the spreadsheet file.', default=None, type=str)
@@ -86,6 +90,8 @@ def createCommandLineOptions():
 
     commandLineParser.add_argument('-trf','--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str)
     commandLineParser.add_argument('-trfe','--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str)
+
+    commandLineParser.add_argument('-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None) # This lacks a type= declaration. Is that needed?
 
     commandLineParser.add_argument('-vb', '--verbose', help='Print more information.', action='store_true')
     commandLineParser.add_argument('-d', '--debug', help='Print too much information.', action='store_true')
@@ -103,23 +109,26 @@ def createCommandLineOptions():
     userInput[ 'rawFileName' ] = commandLineArguments.rawFile
     userInput[ 'rawFileEncoding' ] = commandLineArguments.rawFileEncoding
 
-    userInput[ 'parsingScript' ] = commandLineArguments.parsingScript
-    userInput[ 'parsingScriptEncoding' ] = commandLineArguments.parsingScriptEncoding
+    userInput[ 'parsingProgram' ] = commandLineArguments.parsingProgram
+    userInput[ 'parsingScriptEncoding' ] = commandLineArguments.parsingScriptEncoding # This should always be utf-8. Can Python even execute non-utf-8 and non-ascii?
 
     userInput[ 'parseSettingsFile' ] = commandLineArguments.parseSettingsFile
     userInput[ 'parseSettingsFileEncoding' ] = commandLineArguments.parseSettingsFileEncoding
 
-    userInput['spreadsheetFileName' ] = commandLineArguments.spreadsheet
-    userInput['spreadsheetFileEncoding' ] = commandLineArguments.spreadsheetEncoding
+    userInput[ 'spreadsheetFileName' ] = commandLineArguments.spreadsheet
+    userInput[ 'spreadsheetFileEncoding' ] = commandLineArguments.spreadsheetEncoding
 
     userInput[ 'characterDictionaryFileName' ] = commandLineArguments.characterNamesDictionary
     userInput[ 'characterDictionaryEncoding' ] = commandLineArguments.characterNamesDictionaryEncoding
 
-    userInput['translatedRawFileName' ] = commandLineArguments.translatedRawFile
-    userInput['translatedRawFileEncoding' ] = commandLineArguments.translatedRawFileEncoding
+    userInput[ 'translatedRawFileName' ] = commandLineArguments.translatedRawFile
+    userInput[ 'translatedRawFileEncoding' ] = commandLineArguments.translatedRawFileEncoding
+
+    userInput[ 'columnToUseForReplacements' ] = commandLineArguments.columnToUseForReplacements
 
     userInput[ 'verbose' ] = commandLineArguments.verbose
     userInput[ 'debug' ] = commandLineArguments.debug
+
     return userInput
 
 
@@ -220,9 +229,9 @@ def readSettingsFromTextFile(fileNameWithPath, fileNameEncoding):
     return tempDictionary
 
 
-# This returns either None or a dictionary of the contents of parsingScript.ini.
-def getParseSettingsDictionary(parsingScript,parseSettingsFile=None,parseSettingsFileEncoding=defaultTextFileEncoding):
-    parsingScriptObject=pathlib.Path(parsingScript).absolute()
+# This returns either None or a dictionary of the contents of parsingProgram.ini.
+def getParseSettingsDictionary(parsingProgram,parseSettingsFile=None,parseSettingsFileEncoding=defaultTextFileEncoding):
+    parsingScriptObject=pathlib.Path(parsingProgram).absolute()
 
     if parseSettingsFile == None:
         #check to see if settings file exists.
@@ -258,8 +267,8 @@ def validateUserInput(userInput):
     global debug
     debug=userInput[ 'debug' ]
 
-    # TODO: Update debug setting in all imported libraries, chocolate, dealWithEncoding, and the parsingScript.
-    # The first two are doable but the parsingScript does not get imported here. Should it be?
+    # TODO: Update debug setting in all imported libraries, chocolate, dealWithEncoding, and the parsingProgram.
+    # The first two are doable but the parsingProgram does not get imported here. Should it be?
 
     if userInput[ 'mode' ].lower() == 'input':
         userInput[ 'mode' ] = 'input'
@@ -274,7 +283,7 @@ def validateUserInput(userInput):
         sys.exit(1)
 
     verifyThisFileExists( userInput[ 'rawFileName' ] )
-    verifyThisFileExists( userInput[ 'parsingScript' ] )
+    verifyThisFileExists( userInput[ 'parsingProgram' ] )
 
     if userInput[ 'parseSettingsFile' ] != None:
         if checkIfThisFileExists( userInput[ 'parseSettingsFile' ] ) == True:
@@ -359,7 +368,7 @@ def validateUserInput(userInput):
             userInput[ 'characterDictionary' ]=tempDict
 
             if debug == True:
-                print( ( 'userInput[characterDictionary]=' + str(userInput[ 'characterDictionary' ]) ).encode(consoleEncoding) )
+                print( ( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) ).encode(consoleEncoding) )
 
         #elif checkIfThisFileExists( userInput[ 'characterDictionaryFileName' ] ) != True:
         else:
@@ -371,6 +380,11 @@ def validateUserInput(userInput):
     #elif userInput[ 'characterDictionaryFileName' ] == None
     else:
         userInput[ 'characterDictionary' ] = None
+
+    # This cannot be fully validated, checked to see if it exists, because the spreadsheet needs to be parsed first. So far, only the file name has been validated, so only setting a default value can be done at this point.
+    #userInput[ 'columnToUseForReplacements' ]
+    if userInput[ 'columnToUseForReplacements' ] == None:
+        userInput[ 'columnToUseForReplacements' ] = defaultOutputColumn
 
     if userInput[ 'debug' ] == True:
         userInput[ 'verbose' ] = True
@@ -410,7 +424,7 @@ def validateUserInput(userInput):
 
 def parseRawFile(
             rawFileNameAndPath,
-            parsingScript,
+            parsingProgram,
             rawFileEncoding=defaultTextFileEncoding,
             parsingScriptEncoding=defaultTextFileEncoding,
             parseSettingsFile=None,
@@ -418,14 +432,14 @@ def parseRawFile(
             characterDictionary=None
             ):
 
-    #parsingScript='templates\KAG3.py'
-    #parsingScript='templates\KAG3.PrincessBritania.py'
+    #parsingProgram='templates\KAG3.py'
+    #parsingProgram='templates\KAG3.PrincessBritania.py'
 
-    # import parsingScript  # With fancier import syntax where the parent directory is added to sys.path first:
-    #parsingScriptObject=pathlib.Path(parsingScript).absolute() #According to the docs, this should not work, but it does. There is no absolute() method.
+    # import parsingProgram  # With fancier import syntax where the parent directory is added to sys.path first:
+    #parsingScriptObject=pathlib.Path(parsingProgram).absolute() #According to the docs, this should not work, but it does. There is no absolute() method.
 
-    # This takes the parsingScript.py, gets the absolute path, adds the parent directory to sys.path so Python can import it, fixes the name to not contain reserved characters, and then imports it as a temporary file.
-    parsingScriptObject=pathlib.Path(parsingScript).resolve()
+    # This takes the parsingProgram.py, gets the absolute path, adds the parent directory to sys.path so Python can import it, fixes the name to not contain reserved characters, and then imports it as a temporary file.
+    parsingScriptObject=pathlib.Path(parsingProgram).resolve()
     # sys.path.append(str(parsingScriptObject.parent))
     # importlib.import_module(parsingScriptObject.stem)
 
@@ -458,7 +472,7 @@ def parseRawFile(
     #customParser='resources.' + parsingScriptObject.name
     #import customParser
     #import resources.templates.KAG3_PrincessBritania as customParser
-    #import parsingScript
+    #import parsingProgram
     #from 'resources.' + customParser import input
 #    print('parsingScriptObject=' + str(parsingScriptObject))
 #    print('parsingScriptObject.name=' + parsingScriptObject.name)
@@ -482,7 +496,7 @@ def parseRawFile(
     #print( 'customParser.__version__=' + str(customParser.__version__) )
     #print(str(dir(customParser) ))
 
-    parseSettingsDictionary=getParseSettingsDictionary(parsingScript, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding)
+    parseSettingsDictionary=getParseSettingsDictionary(parsingProgram, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding)
 
     mySpreadsheet=None
     if parseSettingsDictionary != None:
@@ -503,13 +517,14 @@ def parseRawFile(
 def insertTranslatedText(
             rawFileName,
             spreadsheetFileName,
-            parsingScript,
+            parsingProgram,
             rawFileEncoding=defaultTextFileEncoding,
             spreadsheetFileEncoding=defaultTextFileEncoding,
             parsingScriptEncoding=defaultTextFileEncoding,
             parseSettingsFile=None, 
             parseSettingsFileEncoding=defaultTextFileEncoding,
-            characterDictionary=None
+            characterDictionary=None,
+            outputColumn=defaultOutputColumn
             ):
 
     global tempParseScriptPathAndName
@@ -520,28 +535,42 @@ def insertTranslatedText(
 
     pathlib.Path( tempParseScriptPathAndName ).resolve().parent.mkdir( parents = True, exist_ok = True )
 
-    parsingScriptObject=pathlib.Path(parsingScript).resolve()
-    shutil.copy( str(parsingScriptObject) , tempParseScriptPathAndName )
+    parsingProgramObject=pathlib.Path(parsingProgram).resolve()
+    shutil.copy( str(parsingProgramObject) , tempParseScriptPathAndName )
     sys.path.append( str( pathlib.Path( __file__ ).resolve().parent) )
     import scratchpad.temp as customParser # Hardcoded to import as scratchpad\temp.py
 
     # Need to pass in rawFileName as-is.
-    # Need to pass parsingScript as-is.
+    # Need to pass parsingProgram as-is.
     # Need to convert spreadsheet to a chocolate.Strawberry(), using rawFileEncoding
     # Need to convert parseSettingsFile to parseSettingsDictionary using parseSettingsFileEncoding
     # Support direct passthrough for characterDictionary
 
-    mySpreadsheet=chocolate.Strawberry(myFileName=spreadsheetFileName,fileEncoding=spreadsheetFileEncoding,createNew=False)
+    mySpreadsheet=chocolate.Strawberry( myFileName=spreadsheetFileName, fileEncoding=spreadsheetFileEncoding)
 
-    parseSettingsDictionary=getParseSettingsDictionary( parsingScript, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding )
+    parseSettingsDictionary=getParseSettingsDictionary( parsingProgram, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding )
+
+    # Dump everything into a 'settings' dictionary so the API does not have to change as often.
+    settingsDictionary={}
+    settingsDictionary[ 'fileEncoding' ]=rawFileEncoding
+    settingsDictionary[ 'parseSettingsDictionary'] = parseSettingsDictionary
+    settingsDictionary[ 'characterDictionary'] = characterDictionary
+    settingsDictionary[ 'outputColumn' ] = outputColumn
 
     #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+#    myString=customParser.output(
+#            rawFileName,
+#            mySpreadsheet=mySpreadsheet,
+#            parseSettingsDictionary=parseSettingsDictionary,
+#            fileEncoding=rawFileEncoding,
+#            characterDictionary=characterDictionary
+#            )
+
+    #def output(fileNameWithPath, mySpreadsheet, settings=None): # mySpreadsheet is a chocolate Strawberry.
     myString=customParser.output(
             rawFileName,
             mySpreadsheet=mySpreadsheet,
-            parseSettingsDictionary=parseSettingsDictionary,
-            fileEncoding=rawFileEncoding,
-            characterDictionary=characterDictionary
+            settings=settingsDictionary
             )
 
     #if debug == True:
@@ -565,10 +594,10 @@ def main():
     if userInput['mode'] == 'input':
         #parseInput()
         #parser.importFromTextFile('A01.ks',)
-        #def parse(rawFileNameAndPath, parsingScript, rawFileEncoding=defaultTextFileEncoding, parseSettingsFile=None, parseSettingsFileEncoding=defaultTextFileEncoding, characterDictionary=None):
+        #def parse(rawFileNameAndPath, parsingProgram, rawFileEncoding=defaultTextFileEncoding, parseSettingsFile=None, parseSettingsFileEncoding=defaultTextFileEncoding, characterDictionary=None):
         mySpreadsheet=parseRawFile(
                 userInput['rawFileName'], 
-                userInput['parsingScript'], 
+                userInput['parsingProgram'], 
                 rawFileEncoding=userInput['rawFileEncoding'],
                 parsingScriptEncoding=userInput['parsingScriptEncoding'],
                 parseSettingsFile=userInput[ 'parseSettingsFile' ],
@@ -595,19 +624,20 @@ def main():
             sys.exit(1)
         # Writing operations are always scary, so mySpreadsheet.exportTo() should always print when it is writing output internally. No need to do it again here.
 
-    elif userInput['mode'] == 'output':
+    elif userInput[ 'mode' ] == 'output':
         # parseOutput()
         #parser.output('A01.ks',)
         translatedTextFile=insertTranslatedText(
                 userInput['rawFileName'],
                 userInput['spreadsheetFileName'], 
-                userInput['parsingScript'],
+                userInput['parsingProgram'],
                 rawFileEncoding=userInput['rawFileEncoding'],
                 spreadsheetFileEncoding=userInput['spreadsheetFileEncoding'], 
                 parsingScriptEncoding=userInput['parsingScriptEncoding'],
                 parseSettingsFile=userInput[ 'parseSettingsFile' ],
                 parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ],
-                characterDictionary=userInput[ 'characterDictionary' ]
+                characterDictionary=userInput[ 'characterDictionary' ],
+                outputColumn=userInput[ 'columnToUseForReplacements' ]
         )
 
         if debug == True:

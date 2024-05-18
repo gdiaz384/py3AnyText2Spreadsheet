@@ -22,6 +22,7 @@ verbose=False
 debug=False
 consoleEncoding='utf-8'
 defaultTextEncoding='utf-8'
+defaultOutputColumn=4
 metadataDelimiter='_'
 
 #https://docs.python.org/3.7/library/codecs.html#standard-encodings
@@ -147,74 +148,105 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
 # exportToTextFile
-def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
-    #print('Hello, world!')
-    #sys.exit(1)
+#def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+def output(fileNameWithPath, mySpreadsheet, settings=None):
 
     assert isinstance(mySpreadsheet, chocolate.Strawberry)
 
-    # Read original json into a string.
-    with open( fileNameWithPath, 'r', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
-        inputFileContents = myFileHandle.read()
-        #inputFileContentsJSON = myFileHandle.read()
-        #inputFileContentsJSON = json.loads(myFileHandle.read())
-
-    #replace any contents of column A in the string with column B. In the literal strings, new lines should be replaced as \r\n , not just \n when writing back to file. How?
-   
-    # if \n in original string
-        # Then create new temporary ColumnB string based upon breaking up \n, then replace \n with \\r\\n in the string, then replace. That should output \r\n in the file. #If there is no \n, then whatever, just replace as-us and print Warning about it to standard output.
-        # Should probably also update logic to handle word wrap.
-
-    columnA=mySpreadsheet.getColumn('A')
-    columnB=mySpreadsheet.getColumn('B')
-
-    counter=0
-    #for every line/row in Strawberry()
-    for entry in columnA:
-        input=columnA[counter].strip()
-        output=columnB[counter].strip()
-
-        if inputFileContents.find( input ) != -1:
-            if verbose == True:
-                print('Replacing literal:')
-            if debug == True:
-                print( ( input ).encode(consoleEncoding) )
-                print('With:')
-                print( ( output ).encode(consoleEncoding) )
-            # Replace here.
-            inputFileContents=inputFileContents.replace(input, output)
-
-      # elif there was not a match, then try replacing new line character in input string with \\r\\n and see if it matches.
-        elif inputFileContents.find( input.replace('\n','\\r\\n') ) != -1:
-            #print('match found replacing \\n with literal \\r\\n')
-
-            # If there is a match, then update the input, and perform the replacement.
-            input=input.replace('\n','\\r\\n')
-            # Fix the output as well to replace any line breaks with psudo-line breaks.
-            output=output.replace('\n','\\r\\n')
-            inputFileContents=inputFileContents.replace(input, output)
-            if verbose == True:
-                print('Replacing after replacing \\n with \\r\\n:')
-            if debug == True:
-                print( ( input ).encode(consoleEncoding) )
-                print('With:')
-                print( ( output ).encode(consoleEncoding) )
-
-        elif inputFileContents.find( columnA[counter].strip().replace('\n','\r\n') ) != -1:
-            print( 'Warning: match found replacing \\n with non-literal \\r\\n' )
-            print( 'Warning: No replacement performed.' )
-
-#splitlines()
-#startswith('aaa')
-
+    #outputColumn=None
+    if 'outputColumn' in settings:
+        if isinstance( settings[ 'outputColumn' ], int) == True:
+            # This sets outputColumn to an integer like 4.
+            outputColumn = settings[ 'outputColumn' ]
+        elif isinstance( settings[ 'outputColumn' ], str) == True:
+            # This sets outputColumn to a string like 'D'.
+            outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
+            if outputColumn == None:
+                try:
+                    outputColumn=int(settings[ 'outputColumn' ])
+                except:
+                    print( ('Error: Could not find column \'' + str( settings[ 'outputColumn' ] ) + '\' in spreadsheet. Using default value \'' + str(defaultOutputColumn) + '\'' ).encode(consoleEncoding) )
+                    outputColumn=defaultOutputColumn
         else:
-            print( ( 'Runtime error: Entry not found: ' + columnA[counter].strip() ).encode(consoleEncoding) )
-        counter += 1
+            outputColumn=defaultOutputColumn
+    #elif 'outputColumn' not in settings:
+    else:
+        # This sets
+        outputColumn=defaultOutputColumn
 
-    # This should actually be "postTranslatedDictionary" or maybe post writing to file dictionary. This only replaces character names currently oddly fits the dictionary name better than intended.
-    if characterDictionary != None:
-        for rawName, translatedName in characterDictionary.items():
-            inputFileContents=inputFileContents.replace(rawName,translatedName)
+    # Read original json into a string.
+    with open( fileNameWithPath, 'r', encoding=settings[ 'fileEncoding' ], errors=inputErrorHandling ) as myFileHandle:
+        #inputFileContents = myFileHandle.read()
+        #inputFileContentsJSON = myFileHandle.read()
+        inputFileContentsJSON = json.loads( myFileHandle.read() )
 
-    return inputFileContents
+    # The actual json takes the form of [ {"message" : "value"}, {"name" : "the name", "message" : "value"} ]
+    # inputFileContentsJSON is a list containing dictionaries for each entry. To get a specific one, do inputFileContentsJSON[counter]
+
+    # Replace any untranslated contents, strings, in column A in the strings in outputColumn. In the literal strings, new lines should be replaced as \r\n , not just \n when writing back to file. How?
+    # if \n in original string
+        # Then create new temporary ColumnB/outputColumn string based upon breaking up \n, then replace \n with \\r\\n in the string, then replace. That should output \r\n in the file. #If there is no \n, then whatever, just replace as-is and print Warning about it to standard output.
+        # Should probably update logic to handle word wrapping natively at some point.
+
+    untranslatedLines=mySpreadsheet.getColumn('A')
+    metadataList=mySpreadsheet.getColumn( 'C' )
+    # outputColumn might be an integer or a letter. The library will take care of that conversion internally for this one method.
+    translatedLines=mySpreadsheet.getColumn( outputColumn )
+
+    currentJSONEntry=0
+
+    #for every line/row in Strawberry()
+    for counter,entry in enumerate(untranslatedLines):
+        # Ignore header row, as always.
+        if counter == 0:
+            continue
+
+        #print('counter=',counter)
+        if debug == True:
+            print('counter=',counter)
+            print(metadataList[counter])
+            print(currentJSONEntry)
+            print( type(counter) )
+            print( type(metadataList[counter]) )
+            print( type(currentJSONEntry) )
+
+        # Double check sanity to make sure the correct entry is being replaced.
+        assert( int( metadataList[counter] ) == currentJSONEntry )
+
+        input=untranslatedLines[counter].strip()
+        output=translatedLines[counter]
+
+        # So, the input after being processed, but not actually modified, does convert new lines to \n, but the original file has them as \r\n, so \n will not match. Convert them back for comparison.
+        input=input.replace('\n','\r\n')
+
+        try:
+            assert input == inputFileContentsJSON[currentJSONEntry]['message'].strip()
+        except:
+            print( 'Error: Assertion failed. assert input == inputFileContentsJSON[currentJSONEntry][message].strip()' )
+            print( ('Input=' + input).encode(consoleEncoding) )
+            print( ('message=' + inputFileContentsJSON[currentJSONEntry]['message'].strip() ).encode(consoleEncoding) )
+            print( ('Output=' + str(output) ).encode(consoleEncoding) )
+            sys.exit(1)
+
+        if ( output != None ) and ( output != '' ):
+            # Some processing of the output should occur here, new line handing/word wrapping, or other predefined changes.
+            output=output.strip()
+            output=output.replace('\n','\\r\\n')
+            output=output.replace('「','"')
+            output=output.replace('」','"')
+
+            # Once post processing is complete, do the thing.
+            inputFileContentsJSON[currentJSONEntry]['message']=output
+
+        # Update the character name if applicable.
+        if ( 'name' in inputFileContentsJSON[currentJSONEntry] ) and ( isinstance( settings[ 'characterDictionary' ], dict) == True ):
+            if inputFileContentsJSON[currentJSONEntry]['name'] in settings[ 'characterDictionary' ]:
+                inputFileContentsJSON[currentJSONEntry]['name']=settings[ 'characterDictionary' ][ inputFileContentsJSON[currentJSONEntry][ 'name' ] ]
+            else:
+                print( ('Warning: Unable to find character name in character dictionary: ' + inputFileContentsJSON[currentJSONEntry][ 'name' ] ).encode(consoleEncoding) )
+
+        currentJSONEntry+=1
+
+    # json.dumps returns a string. json.dump writes to a file. # indent=4 is more readable, but VNT uses indent=2. Use 2 here to match with VNT.
+    return json.dumps(inputFileContentsJSON, ensure_ascii=False, indent=2)
 
