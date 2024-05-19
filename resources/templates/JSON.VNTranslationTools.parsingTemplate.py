@@ -14,7 +14,7 @@ parsingScript='templates\JSON.VNTranslationTools.py'
 
 License: See main program.
 """
-__version__ = '2024.05.01'
+__version__ = '2024.05.18'
 
 
 # Set program defaults.
@@ -159,14 +159,20 @@ def output(fileNameWithPath, mySpreadsheet, settings=None):
             # This sets outputColumn to an integer like 4.
             outputColumn = settings[ 'outputColumn' ]
         elif isinstance( settings[ 'outputColumn' ], str) == True:
-            # This sets outputColumn to a string like 'D'.
-            outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
-            if outputColumn == None:
-                try:
-                    outputColumn=int(settings[ 'outputColumn' ])
-                except:
-                    print( ('Error: Could not find column \'' + str( settings[ 'outputColumn' ] ) + '\' in spreadsheet. Using default value \'' + str(defaultOutputColumn) + '\'' ).encode(consoleEncoding) )
-                    outputColumn=defaultOutputColumn
+            if len(settings[ 'outputColumn' ]) == 1:
+                # Then assume it is already valid as-is.
+                outputColumn=settings[ 'outputColumn' ]
+            else:
+                # This sets outputColumn to a string like 'D' or None if the search string was not found.
+                outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
+                if outputColumn == None:
+                    try:
+                        outputColumn=int(settings[ 'outputColumn' ])
+                    except:
+                        outputColumn=len( mySpreadsheet.getRow(1) )
+                        print( ('Warning: Could not find column \'' + str( settings[ 'outputColumn' ] ) + '\' in spreadsheet. Using furthest right column value \'' + str(defaultOutputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
+    #                    print( ('Error: Could not find column \'' + str( settings[ 'outputColumn' ] ) + '\' in spreadsheet. Using default value \'' + str(defaultOutputColumn) + '\'' ).encode(consoleEncoding) )
+    #                    outputColumn=defaultOutputColumn
         else:
             outputColumn=defaultOutputColumn
     #elif 'outputColumn' not in settings:
@@ -216,24 +222,40 @@ def output(fileNameWithPath, mySpreadsheet, settings=None):
         input=untranslatedLines[counter].strip()
         output=translatedLines[counter]
 
-        # So, the input after being processed, but not actually modified, does convert new lines to \n, but the original file has them as \r\n, so \n will not match. Convert them back for comparison.
-        input=input.replace('\n','\r\n')
-
         try:
             assert input == inputFileContentsJSON[currentJSONEntry]['message'].strip()
         except:
-            print( 'Error: Assertion failed. assert input == inputFileContentsJSON[currentJSONEntry][message].strip()' )
-            print( ('Input=' + input).encode(consoleEncoding) )
-            print( ('message=' + inputFileContentsJSON[currentJSONEntry]['message'].strip() ).encode(consoleEncoding) )
-            print( ('Output=' + str(output) ).encode(consoleEncoding) )
-            sys.exit(1)
+            if input.find('\n') == -1:
+                print( 'Error: Assertion failed. assert input == inputFileContentsJSON[currentJSONEntry][message].strip()' )
+                print( ('Input=' + input).encode(consoleEncoding) )
+                print( ('message=' + inputFileContentsJSON[currentJSONEntry]['message'].strip() ).encode(consoleEncoding) )
+                print( ('Output=' + str(output) ).encode(consoleEncoding) )
+                sys.exit(1)
+
+            # So, the input gets processed but not actually modified so the line breaks are still present as \n. However, the original file has new lines as \r\n, so \n alone will not match. Convert them back for comparison.
+            input=input.replace('\n','\r\n')
+            try:
+                assert input == inputFileContentsJSON[currentJSONEntry]['message'].strip()
+            except:
+                print( 'Error: Assertion failed. assert input == inputFileContentsJSON[currentJSONEntry][message].strip()' )
+                print( ('Input=' + input).encode(consoleEncoding) )
+                print( ('message=' + inputFileContentsJSON[currentJSONEntry]['message'].strip() ).encode(consoleEncoding) )
+                print( ('Output=' + str(output) ).encode(consoleEncoding) )
+                sys.exit(1)
 
         if ( output != None ) and ( output != '' ):
             # Some processing of the output should occur here, new line handing/word wrapping, or other predefined changes.
+            # General fixes.
             output=output.strip()
             output=output.replace('\n','\\r\\n')
+
+            # Data specific fixes.
             output=output.replace('「','"')
             output=output.replace('」','"')
+            if output == '"...?"':
+                output = '"..."'
+            if output == '"............"':
+                output='"..."'
 
             # Once post processing is complete, do the thing.
             inputFileContentsJSON[currentJSONEntry]['message']=output
@@ -247,6 +269,7 @@ def output(fileNameWithPath, mySpreadsheet, settings=None):
 
         currentJSONEntry+=1
 
+    # Once inputFileContentsJSON is fully updated, convert it to a string that represents a file and send it back to the calling function so it can be written out.
     # json.dumps returns a string. json.dump writes to a file. # indent=4 is more readable, but VNT uses indent=2. Use 2 here to match with VNT.
     return json.dumps(inputFileContentsJSON, ensure_ascii=False, indent=2)
 

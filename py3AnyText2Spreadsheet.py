@@ -19,7 +19,7 @@ Is it even possible to parse XML and HTML without knowing the structure in advan
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
-__version__='2024.05.01.alpha'
+__version__='2024.05.17 alpha'
 
 
 # Set defaults.
@@ -91,7 +91,7 @@ def createCommandLineOptions():
     commandLineParser.add_argument('-trf','--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str)
     commandLineParser.add_argument('-trfe','--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str)
 
-    commandLineParser.add_argument('-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None) # This lacks a type= declaration. Is that needed?
+    commandLineParser.add_argument('-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None, type=str) # This lacks a type= declaration. Is that needed? #Update: If no type declaration is used, then str is assumed. Just make it explicit then.
 
     commandLineParser.add_argument('-vb', '--verbose', help='Print more information.', action='store_true')
     commandLineParser.add_argument('-d', '--debug', help='Print too much information.', action='store_true')
@@ -340,7 +340,7 @@ def validateUserInput(userInput):
 
             # maybe just append translated.extension?
             userInput[ 'translatedRawFileName' ] = userInput[ 'rawFileName' ] + '.translated' + pathlib.Path( userInput[ 'rawFileName'] ).suffix
-            print( 'Warning no output file name was specified for the translated file. Using:')
+            print( 'Warning: No output file name was specified for the translated file. Using:')
             print( userInput[ 'translatedRawFileName'].encode(consoleEncoding) )
 
     if userInput[ 'characterDictionaryFileName' ] != None:
@@ -411,10 +411,7 @@ def validateUserInput(userInput):
         userInput[ 'characterDictionaryEncoding' ] = defaultTextFileEncoding
 
     if userInput[ 'translatedRawFileEncoding' ] == None:
-        if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks':
-            userInput[ 'translatedRawFileEncoding' ] = defaultTextEncodingForKSFiles
-        else:
-            userInput[ 'translatedRawFileEncoding' ] = defaultTextFileEncoding
+        userInput[ 'translatedRawFileEncoding' ] = userInput[ 'rawFileEncoding' ]
 
     if debug == True:
         print( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) )
@@ -432,8 +429,7 @@ def parseRawFile(
             characterDictionary=None
             ):
 
-    #parsingProgram='templates\KAG3.py'
-    #parsingProgram='templates\KAG3.PrincessBritania.py'
+    # parsingProgram='templates\KAG3.py'
 
     # import parsingProgram  # With fancier import syntax where the parent directory is added to sys.path first:
     #parsingScriptObject=pathlib.Path(parsingProgram).absolute() #According to the docs, this should not work, but it does. There is no absolute() method.
@@ -460,6 +456,8 @@ def parseRawFile(
         print( 'copyFrom=' + str(parsingScriptObject) )
         print( 'copyTo=' + str( pathlib.Path(tempParseScriptPathAndName).resolve()) )
 
+    # TODO: before copying, if the target exists, then read both files and compare their hash. Do not copy if their hashes match.
+    # import hashlib
     # Minor issue still: No way to avoid hardcoding this unless using the importlib module.
     #shutil.copy( str(parsingScriptObject) , str( pathlib.Path(tempParseScriptPathAndName).resolve() ) )
     shutil.copy( str(parsingScriptObject) , tempParseScriptPathAndName )
@@ -471,17 +469,15 @@ def parseRawFile(
 
     #customParser='resources.' + parsingScriptObject.name
     #import customParser
-    #import resources.templates.KAG3_PrincessBritania as customParser
+    #import resources.templates.KAG3 as customParser
     #import parsingProgram
     #from 'resources.' + customParser import input
 #    print('parsingScriptObject=' + str(parsingScriptObject))
 #    print('parsingScriptObject.name=' + parsingScriptObject.name)
 
-    #customParser = importlib.import_module('resources.templates.KAG3_PrincessBritania')
     #fixedName=str(parsingScriptObject).replace('\\','.')
     #print( 'fixedName=' + fixedName )
     #customParser = importlib.import_module(fixedName)
-    #customParser = importlib.import_module('...KAG3_PrincessBritania',package='.')
 
 #    currentScriptPathObject=pathlib.Path('.').absolute()
 #    print( 'currentScriptPathObject=' + str(currentScriptPathObject) )

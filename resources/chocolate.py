@@ -232,7 +232,7 @@ class Strawberry:
             print( str(range(len(newRowList)) ).encode(consoleEncoding))
             print( ('newRowList=' + str(newRowList) ).encode(consoleEncoding) )
 
-        for i in range(len(newRowList)):
+        for i in range( len(newRowList) ):
             #Syntax for assignment is: mySpreadsheet['A4'] = 'pie'
             #mySpreadsheet['A4'] without an assignment returns: <Cell 'Sheet'.A4> 
             #columns begin with 1 instead of 0, so add 1 when referencing the target column, but not the source because source is a python list which are referenced as list[0], list[1], list[2], list[3], etc

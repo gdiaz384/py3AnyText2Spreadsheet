@@ -20,8 +20,6 @@ The project goals are to:
 - Random text files (.txt).
 - DDWSystem2013, DDWorks Game System, fwDDSystem, [vndb.org](https://vndb.org/r?f=fwDDSystem-)
 - JSON support:
-    - Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to JSON.
-        - Is it possible to support .psb natively with the FreeMote library?
     - Support for JSON where all entries and are nested under `contents` and there is no additional nesting.
         - Multiple entries must be in a list surrounded by square brackets `[ ]`.
     - To process additional types of JSON, open an issue and provide an `example.json`.
@@ -30,7 +28,9 @@ The project goals are to:
 
 ## Maybe:
 
-- RPGM (MZ, MV, Ace... )
+- RPGM (MZ, MV, Ace... ) # The dream.
+- Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to JSON.
+    - Is it possible to support .psb natively with the FreeMote library?
 
 ## Usage Guide:
 
@@ -50,7 +50,7 @@ TODO: This section.
 
 ## Installation guide
 
-`Current version: 0.1 - 2024Mar18 alpha`
+`Current version: 2024.05.18 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
@@ -60,18 +60,18 @@ TODO: This section.
 
 - The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program.
 - The parsingScript is copied to scratchpad\temp.py and importing scratchpad\temp.py is hardcoded because the parsingScript must be imported as a python module to be executed if it is going to be executed within the context of the main script. This makes sense because:
-    1. it makes it possible import without worrying about path
-    1. reduced conflicts in name since there are many unsupported
-    1.  The importlib library to handle special import handling is no longer necessary at the cost of needing the shutil library to copy the file in a high-level way.
-    1. scratchpad is marked as a temporary directory in git, so it will not interfere with updating the program using git.
-- The use of regex is limited to cases where it is absolutely required. [Regular expressions] are fundamentally very cryptic and very difficult to debug. In contrast, writing a new input parser from scratch hardly takes an afternoon, especially with the templates provided. The idea is to write enough of them and in enough languages such that adjusting a pre-existing one should be possible to anyone who knows the parser's language.
+    1. It makes it possible import without worrying about source path.
+    1. There are reduced conflicts in name since there are many unsupported.
+    1. The importlib library to handle special import handling is no longer necessary at the cost of needing the shutil library to copy the file in a high-level way.
+    1. `scratchpad` is marked as a temporary directory in git, so it will not interfere with updating the program using git.
+- The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a new input parser from scratch hardly takes an afternoon, especially with the templates provided. The idea is to write enough of them for enough file types and eventually in enough languages such that adjusting a pre-existing one should be possible to anyone who knows the parser's language and type of file they are processing.
 - Since Python is especially very easy to work with, it is used as the default language.
 - In accordance with the project goals, parser readability and portability within an engine is a major concern but parsing speed is not.
 
 ### Concept art:
 
-- The design concept behind py3AnyText2Spreadsheet is to create a platform that has a few predefined templates but mostly serves as a proxy for other parsers. The only limitation is that such parsers must somehow return a chocolate.Strawberry(), a spreadsheet, as a result so that it can be used for data processing.
-- In addition, this project also seperates out the script and text parsing logic from the translation logic of py3TranslateLLM and in order to maintain them as seperate projects intended to be used together as part of a larger workflow.
+- The design concept behind py3AnyText2Spreadsheet is to create a platform that has a few predefined templates but mostly serves as a proxy for other parsers. The only limitation is that such parsers must somehow return and accept a chocolate.Strawberry(), a logical spreadsheet, for data processing.
+- In addition, this project also seperates out the script and text parsing logic from the translation logic of py3TranslateLLM. The intent is to maintain them as seperate projects that are eventually used together as part of a larger workflow to translate arbitrary files/data.
 
 ### Regarding Settings Files:
 
@@ -100,7 +100,7 @@ TODO: This section.
 
 ### Regarding XLSX
 
-- XLSX (XML... TODO: This part.) is the native format used in py3TranslateLLM to store data internally during processing and should be the most convenient way to edit translated entries directly without any.
+- XLSX (XML... TODO: This part.) is the native format used in py3AnyText2Spreadsheet to store data internally during processing and should be the most convenient way to edit translated entries directly without any.
 - Here are some free and open source software ([FOSS](//en.wikipedia.org/wiki/Free_and_open-source_software)) office suits that can read and write the spreadsheet formats (.csv, .xlsx, .xls, .ods):
     - Apache [OpenOffice](//www.openoffice.org). [License](//www.openoffice.org/license.html) and [source](//openoffice.apache.org/downloads.html). Note: Can read but not write to .xlsx.
     - [LibreOffice](//www.libreoffice.org). [License](//www.libreoffice.org/about-us/licenses) and [source](//www.libreoffice.org/download/download-libreoffice/).
@@ -110,7 +110,7 @@ TODO: This section.
 
 - Read the [Text Encoding](//github.com/gdiaz384/py3TranslateLLM/wiki/Text-Encoding) wiki entry.
 - After reading the above wiki entry, the rest of this section should make more sense.
-- For compatability reasons, everything gets converted to binary strings for stdout which can result in the console sometimes showing utf-8 hexadecimal (hex) encoded unicode characters, like `\xe3\x82\xaf\xe3\x83\xad\xe3\x82\xa8`, especially with `debug` enabled. To convert them back to non-ascii chararacters, like `クロエ`, dump them into a hex to unicode converter.
+- For compatability reasons, data gets converted to binary strings for stdout which can result in the console sometimes showing utf-8 hexadecimal (hex) encoded unicode characters, like `\xe3\x82\xaf\xe3\x83\xad\xe3\x82\xa8`, especially with `debug` enabled. To convert them back to non-ascii chararacters, like `クロエ`, dump them into a hex to unicode converter.
     - Example: [www.coderstool.com/unicode-text-converter](//www.coderstool.com/unicode-text-converter)
 - Some character encodings cannot be converted to other encodings. When such errors occur, use the following error handling options:
     - [docs.python.org/3.7/library/codecs.html#error-handlers](//docs.python.org/3.7/library/codecs.html#error-handlers), and [More Examples](//www.w3schools.com/python/ref_string_encode.asp) -> Run example.
@@ -125,7 +125,7 @@ TODO: This section.
     - To make it available: `pip install chardet`
     - If it is not available, then everything is assumed to be `utf-8` unless otherwise specified.
 
-## Regarding Python libraries:
+## Regarding Python Library Dependencies:
 
 - py3AnyText2Spreadsheet was developed on Python 3.7.6.
 - It is not necessarily clear what versions work with what other versions, in part due to the shenanigans of some developers creating deliberate incompatibilities, so just install whatever and hope it works.
@@ -141,15 +141,12 @@ dealWithEncoding | Required. | Handles text codecs and implements `chardet`. | I
 [odfpy](//pypi.org/project/odfpy) | Optional. | Provides interoperability for Open Document Spreadsheet (.ods). | `pip install odfpy` | 1.4.1
 
 Libraries can also require other libraries.
-
 - odfpy requires: `defusedxml`.
 - py3AnyText2Spreadsheet and the libraries above also use libraries from the Python standard library. For an enumeration of those, check the source code.
-
-## Dependencies
-
-- Python 3.4+ TODO: Test this.
 - openpyxl - The latest version of openpyxl requires Python [3.6? 3.7?]
+- chocolate which implements openpyxl for use as a data structure. It also uses the other libraries that handle various types of spreadsheets.
 - chardet The latest version of chardet requires Python 3.7+.
+- Python 3.4+ Standard library. TODO: Test this. 
 
 ## Licenses:
 
