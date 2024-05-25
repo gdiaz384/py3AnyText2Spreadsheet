@@ -4,7 +4,7 @@
 Description: This file parses a JSON from VNTranslationTools as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
 
 # Concept art and description:
-# This function processes raw data (.ks, .txt. .ts) using a parse file and converts it into a spreadsheet. The extracted data is meant to be loaded into the main workbook data structure for further processing. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library, hence chocolate.Strawberry().
+# input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
 
 Usage: This file is meant to be run as py3Any2Spreadsheet('templates\JSON.VNTranslationTools.py')
 
@@ -46,21 +46,20 @@ else:
     sys.exit('Unspecified error.'.encode(consoleEncoding))
 
 
-# input() accepts: 
-# - an input file name
-# - parseFileDictionary as a Python dictionary
-# - the encoding for that text file (utf-8, shift-jis)
-# - An optional character dictionary as a Python dictionary
-# and creates a spreadsheet where the first column is the dialogue. The second column is the name of the speaker, if any, and the third column is metadata: the total number of lines that are represented by the dialogue entry, and the line number dialogue was extracted from. If dialogue was taken from more than one line, then the line number is the last line.
+# input() accepts:
+# - 1) An inputFileName
+# - 2) parseSettingsDictionary has whatever settings were defined in thisScript.ini available as a Python dictionary.
+# - 3) The raw character encoding for the inputFileName (utf-8, shift-jis)
+# - 4) An optional characterDictionary.csv as a Python dictionary. The first row is ignored when going from csv->Python.
 
-# input then updates the spreadsheet with the first row as metadata. The first column, column A, as the dialogue, the second column, Column B, as the speaker, and the third column, Column C, as a string containing metadata.
-# The metadata is: 1) number of lines the rawText in column A represents 2) the line numbers the input is taken from, and what else?
+# input() then needs to create a spreadsheet where the first row is column headers. The first column, column A, has the untranslated dialogue, the second column, Column B, has the speaker for each line, and the third column, Column C, has a string containing whatever metadata is appropriate/required to reinsert the strings and verify where they were extracted from.
 
-# Newer list approach: In other words, [ [ ], [ ] , [ ], [ ] ] would make more sense. A single list, then each entry in that list is a list containing strings or None entries. Each entry is: dialogue, speaker, lineCount, lineNumberOfDialogue.
+# Usually metadata for Column C is 1) the line numbers the input is taken from, and possibly 2) total number of lines column A, rawText, represents if there was any line merging done like for kirikiri files. If dialogue was taken from more than one line, then the line number is the last line or whatever makes sense.
 
-# parseSettingsDictionary is not needed for this parsing technique. It can either be defined within this file or imported.
+# output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
+
+# parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
 # characterDictionary may or may not exist, so set it to None by default.
-# A better name for characterDictionary at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
 def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 
     if debug == True:
@@ -149,7 +148,7 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
 # exportToTextFile
 #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
-def output(fileNameWithPath, mySpreadsheet, settings=None):
+def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
 
     assert isinstance(mySpreadsheet, chocolate.Strawberry)
 
@@ -232,7 +231,7 @@ def output(fileNameWithPath, mySpreadsheet, settings=None):
                 print( ('Output=' + str(output) ).encode(consoleEncoding) )
                 sys.exit(1)
 
-            # So, the input gets processed but not actually modified so the line breaks are still present as \n. However, the original file has new lines as \r\n, so \n alone will not match. Convert them back for comparison.
+            # The input gets processed but not actually modified. The line breaks are still present as \n. However, the original file has new lines as \r\n, so \n alone will not match. Convert back for comparison.
             input=input.replace('\n','\r\n')
             try:
                 assert input == inputFileContentsJSON[currentJSONEntry]['message'].strip()
@@ -260,6 +259,7 @@ def output(fileNameWithPath, mySpreadsheet, settings=None):
             # Once post processing is complete, do the thing.
             inputFileContentsJSON[currentJSONEntry]['message']=output
 
+        # TODO: Update the characterDictionary handling code to assume it is directly available instead of being passed within the settings dictionary.
         # Update the character name if applicable.
         if ( 'name' in inputFileContentsJSON[currentJSONEntry] ) and ( isinstance( settings[ 'characterDictionary' ], dict) == True ):
             if inputFileContentsJSON[currentJSONEntry]['name'] in settings[ 'characterDictionary' ]:

@@ -343,6 +343,10 @@ def validateUserInput(userInput):
             print( 'Warning: No output file name was specified for the translated file. Using:')
             print( userInput[ 'translatedRawFileName'].encode(consoleEncoding) )
 
+    # This is about to be used, so map it now.
+    if userInput[ 'characterDictionaryEncoding' ] == None:
+        userInput[ 'characterDictionaryEncoding' ] = defaultTextFileEncoding
+
     if userInput[ 'characterDictionaryFileName' ] != None:
         if checkIfThisFileExists( userInput[ 'characterDictionaryFileName' ] ) == True:
             # Read in characterDictionary.csv
@@ -407,9 +411,6 @@ def validateUserInput(userInput):
     if userInput[ 'spreadsheetFileEncoding' ] == None:
         userInput[ 'spreadsheetFileEncoding' ] = defaultTextFileEncoding
 
-    if userInput[ 'characterDictionaryEncoding' ] == None:
-        userInput[ 'characterDictionaryEncoding' ] = defaultTextFileEncoding
-
     if userInput[ 'translatedRawFileEncoding' ] == None:
         userInput[ 'translatedRawFileEncoding' ] = userInput[ 'rawFileEncoding' ]
 
@@ -458,6 +459,7 @@ def parseRawFile(
 
     # TODO: before copying, if the target exists, then read both files and compare their hash. Do not copy if their hashes match.
     # import hashlib
+
     # Minor issue still: No way to avoid hardcoding this unless using the importlib module.
     #shutil.copy( str(parsingScriptObject) , str( pathlib.Path(tempParseScriptPathAndName).resolve() ) )
     shutil.copy( str(parsingScriptObject) , tempParseScriptPathAndName )
@@ -498,6 +500,7 @@ def parseRawFile(
     if parseSettingsDictionary != None:
         # Usage: customParser.input('A01.ks', ...)
                                                 #def input( fileNameWithPath, parseSettingsDictionary, fileEncoding=defaultTextEncoding, characterDictionary=None):
+        # This could be updated to put fileEncoding into a settings {} dictionary, but like... why? There needs to be more variables handed in for it to be worth it. What more variables should be handed in?
         mySpreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, characterDictionary=characterDictionary)
     #elif parseSettingsDictionary == None:
     else:
@@ -550,7 +553,7 @@ def insertTranslatedText(
     settingsDictionary={}
     settingsDictionary[ 'fileEncoding' ]=rawFileEncoding
     settingsDictionary[ 'parseSettingsDictionary'] = parseSettingsDictionary
-    settingsDictionary[ 'characterDictionary'] = characterDictionary
+    #settingsDictionary[ 'characterDictionary'] = characterDictionary # This should be passed directly.
     settingsDictionary[ 'outputColumn' ] = outputColumn
 
     #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
@@ -562,10 +565,11 @@ def insertTranslatedText(
 #            characterDictionary=characterDictionary
 #            )
 
-    #def output(fileNameWithPath, mySpreadsheet, settings=None): # mySpreadsheet is a chocolate Strawberry.
+    #def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ): # mySpreadsheet is a chocolate Strawberry.
     myString=customParser.output(
             rawFileName,
             mySpreadsheet=mySpreadsheet,
+            characterDictionary=characterDictionary,
             settings=settingsDictionary
             )
 
@@ -607,18 +611,22 @@ def main():
         #outputPathObject=pathlib.Path( userInput[ 'spreadsheetFileName' ] )
         #outputPathObject.extension # This does not work. What an odd design choice.
 
-        if ( userInput['spreadsheetExtension'] == '.csv' ):
-            mySpreadsheet.exportToCSV( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], errors=outputErrorHandling )
-        elif ( userInput['spreadsheetExtension'] == '.xlsx' ):
-            mySpreadsheet.exportToXLSX( userInput['spreadsheetFileName' ] )
-        elif ( userInput['spreadsheetExtension'] == '.xls' ):
-            mySpreadsheet.exportToXLS( userInput['spreadsheetFileName' ] )
-        elif ( userInput['spreadsheetExtension'] == '.ods' ):
-            mySpreadsheet.exportToODS( userInput[ 'spreadsheetFileName' ] )
-        else:
-            print( unspecifiedError )
-            sys.exit(1)
-        # Writing operations are always scary, so mySpreadsheet.exportTo() should always print when it is writing output internally. No need to do it again here.
+        # Newer simpler syntax.
+        mySpreadsheet.export( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ] )
+
+        # Old code.
+#        if ( userInput['spreadsheetExtension'] == '.csv' ):
+#            mySpreadsheet.exportToCSV( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], errors=outputErrorHandling )
+#        elif ( userInput['spreadsheetExtension'] == '.xlsx' ):
+#            mySpreadsheet.exportToXLSX( userInput['spreadsheetFileName' ] )
+#        elif ( userInput['spreadsheetExtension'] == '.xls' ):
+#            mySpreadsheet.exportToXLS( userInput['spreadsheetFileName' ] )
+#        elif ( userInput['spreadsheetExtension'] == '.ods' ):
+#            mySpreadsheet.exportToODS( userInput[ 'spreadsheetFileName' ] )
+#        else:
+#            print( unspecifiedError )
+#            sys.exit(1)
+        # Writing operations are always scary, so mySpreadsheet.export() should always print when it is writing output internally. No need to do it again here.
 
     elif userInput[ 'mode' ] == 'output':
         # parseOutput()
@@ -639,10 +647,16 @@ def main():
         if debug == True:
             print( ( 'translatedTextFile=' + str(translatedTextFile) ).encode(consoleEncoding) )
 
+        if isinstance( translatedTextFile, chocolate.Strawberry) == True:
+            translatedTextFile.export( userInput[ 'translatedRawFileName' ], fileEncoding=userInput[ 'translatedRawFileEncoding' ] )
+        else:
             #userInput exists
-        with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
-            myFileHandle.write(translatedTextFile)
-        print( ('Wrote: '+ userInput[ 'translatedRawFileName' ]).encode(consoleEncoding) )
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
+                myFileHandle.write(translatedTextFile)
+
+        # chocolate.Strawberry() will print out its own confirmation of writing out the file, so do not duplicate that message here.
+        if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
+            print( ('Wrote: '+ userInput[ 'translatedRawFileName' ]).encode(consoleEncoding) )
 
 
 if __name__ == '__main__':

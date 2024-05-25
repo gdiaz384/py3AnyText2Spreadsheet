@@ -4,7 +4,7 @@
 Description: This file parses a KAG3.ks file as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
 
 # Concept art and description:
-# This function processes raw data (.ks, .txt. .ts) using a parse file and converts it into a spreadsheet. The extracted data is meant to be loaded into the main workbook data structure for further processing. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
+# input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
 
 Usage: This file is meant to be run as py3Any2Spreadsheet('templates\KAG3.py')
 
@@ -12,7 +12,7 @@ Within py3Any2Spreadsheet.py, it can be run as:
 parsingScript='templates\KAG3.py'
 # import parsingScript  # With fancier import syntax where the parent directory is added to sys.path first:
 parsingScriptObject=pathlib.Path(parsingScript).absolute()
-sys.path.append(str(parsingScriptObject.parent))
+sys.path.append( str(parsingScriptObject.parent) )
 parser=parsingScriptObject.name
 import parser
 parser.input('A01.ks',)
@@ -51,23 +51,20 @@ else:
     sys.exit('Unspecified error.'.encode(consoleEncoding))
 
 
-# input() accepts: 
-# - an input file name
-# - parseFileDictionary as a Python dictionary
-# - the encoding for that text file (utf-8, shift-jis)
-# - An optional character dictionary as a Python dictionary
-# and creates a spreadsheet where the first column is the dialogue. The second column is the name of the speaker, if any, and the third column is metadata: the total number of lines that are represented by the dialogue entry, and the line number dialogue was extracted from. If dialogue was taken from more than one line, then the line number is the last line.
+# input() accepts:
+# - 1) An inputFileName
+# - 2) parseSettingsDictionary has whatever settings were defined in thisScript.ini available as a Python dictionary.
+# - 3) The raw character encoding for the inputFileName (utf-8, shift-jis)
+# - 4) An optional characterDictionary.csv as a Python dictionary. The first row is ignored when going from csv->Python.
 
-# input then updates the spreadsheet with the first row as metadata. The first column, column A, as the dialogue, the second column, Column B, as the speaker, and the third column, Column C, as a string containing metadata.
-# The metadata is: 1) number of lines the rawText in column A represents 2) the line numbers the input is taken from, and what else?
+# input() then needs to create a spreadsheet where the first row is column headers. The first column, column A, has the untranslated dialogue, the second column, Column B, has the speaker for each line, and the third column, Column C, has a string containing whatever metadata is appropriate/required to reinsert the strings and verify where they were extracted from.
 
-# Instead of a dictionary to remove duplicates, integrated cache should be used to prevent submission of duplicates to translation engines.
-# Removing them while reading from the raw file removes a lot of information, like different speakers saying the same thing, and makes ordered replacement of entries impossible, so adding all entries, even if they are duplicates, is better at this stage.
+# Usually metadata for Column C is 1) the line numbers the input is taken from, and possibly 2) total number of lines column A, rawText, represents if there was any line merging done like for kirikiri files. If dialogue was taken from more than one line, then the line number is the last line or whatever makes sense.
 
-# Newer list approach: In other words, [ [ ], [ ] , [ ], [ ] ] would make more sense. A single list, then each entry in that list is a list containing strings or None entries. Each entry is: dialogue, speaker, lineCount, lineNumberOfDialogue.
+# output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
 
-#def importFromTextFile():
-# A better name for charaNamesDict at this stage is probably 'doNotIgnoreLinesThatStartWithThis'.
+# parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
+# characterDictionary may or may not exist, so set it to None by default.
 def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, charaNamesDict=None):
 
     # parseSettingsDictionary must exist. It can either be defined within this file or imported.

@@ -8,7 +8,7 @@ Usage: See below. Like at the bottom.
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__='2024.05.17'
+__version__='2024.05.23'
 
 #set defaults
 #printStuff=True
@@ -232,7 +232,7 @@ class Strawberry:
             print( str(range(len(newRowList)) ).encode(consoleEncoding))
             print( ('newRowList=' + str(newRowList) ).encode(consoleEncoding) )
 
-        for i in range( len(newRowList) ):
+        for i in range(len(newRowList)):
             #Syntax for assignment is: mySpreadsheet['A4'] = 'pie'
             #mySpreadsheet['A4'] without an assignment returns: <Cell 'Sheet'.A4> 
             #columns begin with 1 instead of 0, so add 1 when referencing the target column, but not the source because source is a python list which are referenced as list[0], list[1], list[2], list[3], etc
@@ -254,15 +254,23 @@ class Strawberry:
         #x = openpyxl.utils.column_index_from_string('A')   #returns 1 as an int
         #y= openpyxl.utils.get_column_letter(1)   #returns 'A'
         #Example: mySpreadsheet.cell(row=3, column=openpyxl.utils.column_index_from_string('B')).value='pies'
+        if isinstance( columnLetter, str) == True:
+            try:
+                tempColumnNumber=int( columnLetter )
+            except:
+                tempColumnNumber=openpyxl.utils.column_index_from_string( columnLetter.upper() )
+        else:
+            # This needs to be an int. Crash if it is not.
+            tempColumnNumber=int( columnLetter )
 
         if debug == True:
-            print(( 'Replacing column \''+columnLetter+'\' with the following contents:').encode(consoleEncoding))
-            print(str(newColumnInAList).encode(consoleEncoding))
+            print( ( 'Replacing column \'' + columnLetter + '\' with the following contents:' ).encode(consoleEncoding) )
+            print( str( newColumnInAList ).encode(consoleEncoding) )
 
         for i in range( len(newColumnInAList) ):
             #Syntax for assignment is: mySpreadsheet['A4'] = 'pie''
             #Rows begin with 1, not 0, so add 1 to the reference row, but not to source list since list starts references at 0.
-            self.spreadsheet.cell( row=int( i+1 ), column=openpyxl.utils.column_index_from_string( columnLetter.upper() ) ).value=newColumnInAList[ i ]
+            self.spreadsheet.cell( row=int( i+1 ), column=tempColumnNumber ).value=newColumnInAList[ i ]
 
     #Example: replaceColumn('B',newColumnList)
 
