@@ -13,11 +13,14 @@ The project goals are to:
 - Currently semi-supported:
     - KAG3 used in the kirikiri game engine (.ks).
     - Support for JSON produced by [VNTranslationTools](//github.com/arcusmaximus/VNTranslationTools).
+    - pylivemaker CSV files.
     - Support for arbitrary text files, including JSON, via user defined parse files.
 
 ## Support is planned for:
 
-- Random text files (.txt).
+- Line-by-line text files (.txt).
+- srt files.
+- epub files.
 - DDWSystem2013, DDWorks Game System, fwDDSystem, [vndb.org](https://vndb.org/r?f=fwDDSystem-)
 - JSON support:
     - Support for JSON where all entries and are nested under `contents` and there is no additional nesting.
@@ -50,7 +53,7 @@ TODO: This section.
 
 ## Installation guide
 
-`Current version: 2024.05.18 alpha`
+`Current version: 2024.05.24 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
@@ -58,7 +61,6 @@ TODO: This section.
 
 ## Release Notes:
 
-- The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program.
 - The parsingScript is copied to scratchpad\temp.py and importing scratchpad\temp.py is hardcoded because the parsingScript must be imported as a python module to be executed if it is going to be executed within the context of the main script. This makes sense because:
     1. It makes it possible import without worrying about source path.
     1. There are reduced conflicts in name since there are many unsupported.
@@ -70,11 +72,14 @@ TODO: This section.
 
 ### Concept art:
 
-- The design concept behind py3AnyText2Spreadsheet is to create a platform that has a few predefined templates but mostly serves as a proxy for other parsers. The only limitation is that such parsers must somehow return and accept a chocolate.Strawberry(), a logical spreadsheet, for data processing.
+- The design concept behind py3AnyText2Spreadsheet is to create a platform that has a few predefined templates but mostly serves as a proxy for other parsers. The only limitation is that such parsers must somehow return and accept a chocolate.Strawberry(), a logical spreadsheet, for data processing or some other transferable data structure.
 - In addition, this project also seperates out the script and text parsing logic from the translation logic of py3TranslateLLM. The intent is to maintain them as seperate projects that are eventually used together as part of a larger workflow to translate arbitrary files/data.
+- The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program py3TranslateLLM.
 
 ### Regarding Settings Files:
 
+- These are optional script.ini files. Instead of defining a lot of settings directly in the input(), output() functions, settings defined in the script.ini will be made available as a Python dictionary.
+- The idea is that these script.ini files may be less intimidating to edit for non-programmers and potentially allow the same script to adjust its behavior for different contents without directly updating them.
 - The text formats used for templates and settings (.ini .txt) have their own syntax:
     - `#` indicates that line is a comment.
     - Values are specified by using `item=value` Example:

@@ -93,6 +93,7 @@ def createCommandLineOptions():
 
     commandLineParser.add_argument('-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None, type=str) # This lacks a type= declaration. Is that needed? #Update: If no type declaration is used, then str is assumed. Just make it explicit then.
 
+    commandLineParser.add_argument('-t', '--testRun', help='Parse stuff, but do not write any output files.', action='store_true')
     commandLineParser.add_argument('-vb', '--verbose', help='Print more information.', action='store_true')
     commandLineParser.add_argument('-d', '--debug', help='Print too much information.', action='store_true')
     commandLineParser.add_argument('-v', '--version', help='Print version information and exit.', action='store_true')    
@@ -126,6 +127,7 @@ def createCommandLineOptions():
 
     userInput[ 'columnToUseForReplacements' ] = commandLineArguments.columnToUseForReplacements
 
+    userInput[ 'testRun' ] = commandLineArguments.testRun
     userInput[ 'verbose' ] = commandLineArguments.verbose
     userInput[ 'debug' ] = commandLineArguments.debug
 
@@ -605,28 +607,19 @@ def main():
                 characterDictionary=userInput[ 'characterDictionary' ]
         )
 
-        assert( isinstance( mySpreadsheet, chocolate.Strawberry )  )
+        if mySpreadsheet == None:
+            print('Empty file.')
+            sys.exit(1)
+        else:
+            assert( isinstance( mySpreadsheet, chocolate.Strawberry )  )
 
         # Export to .xlsx
         #outputPathObject=pathlib.Path( userInput[ 'spreadsheetFileName' ] )
         #outputPathObject.extension # This does not work. What an odd design choice.
 
-        # Newer simpler syntax.
-        mySpreadsheet.export( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ] )
-
-        # Old code.
-#        if ( userInput['spreadsheetExtension'] == '.csv' ):
-#            mySpreadsheet.exportToCSV( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], errors=outputErrorHandling )
-#        elif ( userInput['spreadsheetExtension'] == '.xlsx' ):
-#            mySpreadsheet.exportToXLSX( userInput['spreadsheetFileName' ] )
-#        elif ( userInput['spreadsheetExtension'] == '.xls' ):
-#            mySpreadsheet.exportToXLS( userInput['spreadsheetFileName' ] )
-#        elif ( userInput['spreadsheetExtension'] == '.ods' ):
-#            mySpreadsheet.exportToODS( userInput[ 'spreadsheetFileName' ] )
-#        else:
-#            print( unspecifiedError )
-#            sys.exit(1)
-        # Writing operations are always scary, so mySpreadsheet.export() should always print when it is writing output internally. No need to do it again here.
+        if userInput[ 'testRun' ] != True:
+            # Writing operations are always scary, so mySpreadsheet.export() should always print when it is writing output internally. No need to do it again here.
+            mySpreadsheet.export( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ] )
 
     elif userInput[ 'mode' ] == 'output':
         # parseOutput()
@@ -647,12 +640,20 @@ def main():
         if debug == True:
             print( ( 'translatedTextFile=' + str(translatedTextFile) ).encode(consoleEncoding) )
 
+        if userInput[ 'testRun' ] == True:
+            return
+
         if isinstance( translatedTextFile, chocolate.Strawberry) == True:
             translatedTextFile.export( userInput[ 'translatedRawFileName' ], fileEncoding=userInput[ 'translatedRawFileEncoding' ] )
-        else:
+        elif isinstance( translatedTextFile, str ) == True:
             #userInput exists
             with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
                 myFileHandle.write(translatedTextFile)
+        elif translatedTextFile == None:
+            print('Empty file.')
+        else:
+            print( 'Error: Unknown type of return value from parsing script. Must be a chocolate.Strawberry() or string.')
+            print( 'type=' +  str( type(translatedTextFile) ) )
 
         # chocolate.Strawberry() will print out its own confirmation of writing out the file, so do not duplicate that message here.
         if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
