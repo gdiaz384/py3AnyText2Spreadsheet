@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-Description: This file parses a livemaker.CSV as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
+Description: This file parses a ddsystem.txt file, https://vndb.org/r?f=fwDDSystem- , as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
 
-# Concept art and description:
+# API concept art:
 # input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
 
 Usage: This file is meant to be run as py3Any2Spreadsheet('templates\JSON.VNTranslationTools.py')
@@ -12,9 +12,22 @@ Within py3Any2Spreadsheet.py, it can be run as:
 parsingScript='templates\JSON.VNTranslationTools.py'
 # import parsingScript  # But with fancier/messier import syntax.
 
+Algorithim:
+skip empty lines
+skip lines that start with ◇
+Assert the line starts with ◆
+There is always an address/code in between two ◆. Store it as metadata along with the line number.
+Ignore lines where the the last character is a number.
+Ignore lines where the 2nd to last character is a number.
+Ignore lines if the last three characters end in "dat" after converting it to lowercase.
+Next, process the string.
+If the line starts with \n then ignore the first character.
+If the line has a new line character, right next to an "「" then assume the part before that is the speaker's name => "\n「" Do not store the new line character.
+If the line ends in _ then ignore it the _ at the end, up to a max of 3 characters/reptitions.
+
 License: See main program.
 """
-__version__ = '2024.05.24'
+__version__ = '2024.05.30'
 
 
 # Set program defaults.
@@ -61,55 +74,129 @@ else:
 
 # parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
 # characterDictionary may or may not exist, so set it to None by default.
-def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+# Old API:
+#def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
         print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
 
-    # The input file is actually a .csv which is a type of spreadsheet already, so do the lazy thing and convert it into a chocolate.Strawberry()
-    tempSpreadsheet = chocolate.Strawberry( fileNameWithPath, fileEncoding=fileEncoding, removeWhitespaceForCSV=True )
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
 
-    rawDataColumn=tempSpreadsheet.getColumn( 'D' )
-    metadataColumn=tempSpreadsheet.getColumn( 'A' )
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
 
+    # The input file is actually a .txt file so read it in and convert it into a list of strings.
+    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+        inputFileContents = myFileHandle.read().splitlines()
+
+    speakerNameDelimiterList=[ '「', '『', '（' ]
     temporaryList=[]
-    for counter,cell in enumerate(rawDataColumn):
-        if counter == 0:
+    for currentLineNumber,line in enumerate(inputFileContents):
+        # Skip empty lines.
+        if line.strip () == '':
+            continue
+        line=line.strip()
+
+        # Skip lines that start with ◇.
+        if line[0:1]=='◇':
             continue
 
-        tempData=None
-        tempSpeaker=None
+        # Assert the line starts with ◆.
+        assert( line[0:1]=='◆' )
 
-        if cell.find('「') == -1:
-            tempData=cell.strip()
-        elif cell.find('「') == 0:
-            tempData=cell.strip()
-        else:
-            # Then assume a speaker is in the cell and try to extract it.
-            tempSpeaker=cell.partition('「')[0].strip()
-            tempData='「'+cell.partition('「')[2].strip()
+        # These appear to be untranslatable lines because they describe characters, their outfits, expressions and use @ and _ syntaxes.
+        if line.find( '@' ) != -1:
+            continue
 
-        if tempSpeaker == '':
-            tempSpeaker=None
+        if line.find( '_' ) != -1:
+            continue
 
-        # Fix characterName.
-        if ( tempSpeaker != None ) and ( characterDictionary != None ):
-            if tempSpeaker in characterDictionary:
-                tempSpeaker=characterDictionary[tempSpeaker]
+        # Ignore lines where the the last character is a number.
+        if line[-1:].isdigit() == True:
+            continue
+
+        # Ignore lines where the 2nd to last character is a number.
+        if line[-2:-1].isdigit() == True:
+            continue
+
+        # Ignore lines where the 3rd to last character is a number if the 2nd to last is also an underscore.
+#        if ( line[-3:-2].isdigit() == True ) and ( line[-2:-1] == '_' ):
+#            continue
+
+        # Ignore lines if the last three characters end in "dat" after converting it to lowercase.
+        if line[-3:].lower() == 'dat':
+            continue
+
+        #Next, process the string.
+        speaker = None
+        #codeForMetadata = None
+
+        # There is always an address/code in between two ◆. Store it as metadata along with the line number.
+        codeForMetadata = line[ 1: line.rfind( '◆' ) ]
+
+        # The code has been processed, so remove it now.
+        line=line[1:].partition('◆')[2]
+
+        # One off fixes.
+#        if ( line.startswith('bg_') ) or ( line =='black' ) or ( line.startswith('ev_') ):
+        if line =='black': # What does this mean?
+            continue
+
+        # if the line starts with \n then ignore the first character.
+        if line[ :2 ] == r'\n':
+            line=line[ 2: ]
+
+        # if the line has a new line character, right next to an "「" then it might be the part before that is the speaker's name => "\n「" Do not store the new line character.
+
+        if line.find(r'\n') != -1:
+            index=line.find(r'\n')
+            # if the first character after \n is '「'
+            if line[index+2:index+3] in speakerNameDelimiterList:
+                speaker=line.partition( r'\n' )[0].strip()
+                line=line.partition( r'\n' )[2].strip()
+
+            # Old code.
+#            if line.find(index+2:index+3) == '「':
+#                speaker=line.partition( r'\n' )[0].strip()
+#                line=line.partition( r'\n' )[2].strip()
+#            if line.find(index+2:index+3) == '（':
+#                speaker=line.partition( r'\n' )[0].strip()
+#                line=line.partition( r'\n' )[2].strip()
+#            if line.find(index+2:index+3) == '『':
+#                speaker=line.partition( r'\n' )[0].strip()
+#                line=line.partition( r'\n' )[2].strip()
+
+        if ( speaker != None ) and ( characterDictionary != None ):
+            if speaker in characterDictionary:
+                speaker=characterDictionary[speaker]
             else:
-                print( 'Warning: Speaker not in characterDictionary was found at line', counter ) 
+                print( 'Warning: Speaker encountered that was not in character dictionary at line', currentLineNumber)
 
-        temporaryList.append( [tempData, tempSpeaker, metadataColumn[counter] ] )
+        # if the line ends in _ then ignore it the _ at the end, up to a max of 3 characters/reptitions.
+        # This is probably not necessary since lines with _ at the end are assumed to be code.
+        for i in range(3):
+            if line[-1:] == '_':
+                line=line[:-1]
+
+        # Whatever is left is the contents of the line. Append everything found so far to temporaryList.
+        temporaryList.append( [ line, speaker, currentLineNumber, codeForMetadata ] )
 
     # Create a chocolate.Strawberry().
     mySpreadsheet=chocolate.Strawberry()
 
     # Very important: Create the correct header.
-    mySpreadsheet.appendRow( ['Original text', 'speaker','ID' ] )
+    mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
 
     # Add data entries.
     for entry in temporaryList:
-        mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] ])
+        mySpreadsheet.appendRow( [ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + entry[3] ])
 
     if debug == True:
         mySpreadsheet.printAllTheThings()
@@ -140,13 +227,23 @@ def fixString(string, encoding):
 
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
-# exportToTextFile
+# Old API:
 #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
 
     assert isinstance(mySpreadsheet, chocolate.Strawberry)
 
-    #outputColumn=None
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
+
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
+
     if 'outputColumn' in settings:
         if isinstance( settings[ 'outputColumn' ], int) == True:
             # This sets outputColumn to an integer like 4.
@@ -235,4 +332,3 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     # Once tempSpreadsheet is fully updated, just send it back to the calling function so it can be written out to disk.
     # The calling function will check if it is a chocolate.Strawberry(), and if not, then assume it is a string that needs to be written out as-is so there is no need to handle converting it into a string here.
     return tempSpreadsheet
-

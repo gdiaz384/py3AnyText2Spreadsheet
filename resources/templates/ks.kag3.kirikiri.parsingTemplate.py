@@ -77,7 +77,7 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
     # charaNamesDict may or may not exist, so set it to None by default.
     #The file has already been checked to exist and the encoding correctly determined, so just open it and read contents into a string. Then use that epicly long string for processing.
     # Alternative method: https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects
-    with open( fileNameWithPath, encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
         inputFileContents = myFileHandle.read()
 
     #temporaryDict={}        #Dictionaries do not allow duplicates, so insert all entries into a dictionary first to de-duplicate entries, then read dictionary into first column (skip first line/row in target spreadsheet) Syntax:

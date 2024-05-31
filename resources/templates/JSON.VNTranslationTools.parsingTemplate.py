@@ -67,7 +67,7 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
 
     #By this point, the file has already been checked to exist and the encoding correctly determined, so just open it and read contents into a string. Then use that epicly long string for processing.
     # Alternative method that keeps the file open for a long time but uses less memory: https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects
-    with open( fileNameWithPath, 'r', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
         #inputFileContents = myFileHandle.read()
         #inputFileContentsJSON = myFileHandle.read()
         inputFileContentsJSON = json.loads( myFileHandle.read() )

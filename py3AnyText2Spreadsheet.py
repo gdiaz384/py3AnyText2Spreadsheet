@@ -3,7 +3,7 @@
 """
 Concept art:
 import resources.py3Any2Spreadsheet
-chocolateStrawberry = resources.py3Any2Spreadsheet('resources\py3Any2Spreadsheet\resources\KAG3.PrincessBritania.py')
+chocolateStrawberry = resources.py3Any2Spreadsheet('resources\py3Any2Spreadsheet\resources\ks.kag3.kirikiri.parsingTemplate.py')
 
 The above line should work. The idea is for py3Any2Spreadsheet to act as a proxy to call upon various types of parsing scripts but always return a chocolate strawberry.
 If imported as a library, then it should just act as a proxy for the parsing script.
@@ -19,7 +19,7 @@ Is it even possible to parse XML and HTML without knowing the structure in advan
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
-__version__='2024.05.17 alpha'
+__version__='2024.05.30 alpha'
 
 
 # Set defaults.
@@ -42,7 +42,7 @@ inputErrorHandling='strict'
 metadataDelimiter='_'
 linesThatBeginWithThisAreComments='#'
 assignmentOperatorInSettingsFile='='
-ignoreWhitespace=False
+ignoreWhitespaceForCSVFiles=False
 
 unspecifiedError='Unspecified error in py3Any2Spreadsheet.py.'
 usageHelp=' Usage: python py3Any2Spreadsheet.py --help  Example: py3Any2Spreadsheet input myInputFile.ks parsingProgram.py --rawFileEncoding shift-jis'
@@ -69,7 +69,6 @@ else:
 
 
 def createCommandLineOptions():
-    # Add command line options.
     commandLineParser=argparse.ArgumentParser(description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingProgram.input() will be called. If mode is set to output, then parsingProgram.output() will be called.' + usageHelp)
     commandLineParser.add_argument('mode', help='Must be input or output.', type=str)
 
@@ -183,6 +182,7 @@ def readSettingsFromTextFile(fileNameWithPath, fileNameEncoding):
     #Okay, so the file was specified, it exists, and it was read from successfully. The contents are in inputFileContents.
     #Now turn inputFileContents into a dictionary.
     tempDictionary={}
+    # Update: This is very old code. A simpler way to read plaintext files is to do fileContentsAsAListofStrings = myFileHandle.read().splitlines() and then just interate over the list where each entry in the list is a string that represents a different line.
     #while line is not empty (at least \n is present)
     while inputFileContents != '' :
         #returns the current line that will be processed
@@ -365,7 +365,7 @@ def validateUserInput(userInput):
                     if currentLine == 0:
                         currentLine+=1
                     elif currentLine != 0:
-                        if ignoreWhitespace == True:
+                        if ignoreWhitespaceForCSVFiles == True:
                             for i in range(len(line)):
                                 line[i]=line[i].strip()
                         if line[1] == '':
@@ -422,6 +422,7 @@ def validateUserInput(userInput):
     return userInput
 
 
+# This should probably be moved into main() for simplicity's sake. Having an extra function passing around so many paramaters just makes things more confusing and only being invoked once instead of reused sort-of implies that it is part of the same logic anyway.
 def parseRawFile(
             rawFileNameAndPath,
             parsingProgram,
@@ -498,16 +499,23 @@ def parseRawFile(
 
     parseSettingsDictionary=getParseSettingsDictionary(parsingProgram, parseSettingsFile=parseSettingsFile, parseSettingsFileEncoding=parseSettingsFileEncoding)
 
+    settings={}
+    settings[ 'fileEncoding' ]=rawFileEncoding
+    settings[ 'parseSettingsDictionary' ] = parseSettingsDictionary
+
     mySpreadsheet=None
-    if parseSettingsDictionary != None:
+#    if parseSettingsDictionary != None:
         # Usage: customParser.input('A01.ks', ...)
                                                 #def input( fileNameWithPath, parseSettingsDictionary, fileEncoding=defaultTextEncoding, characterDictionary=None):
-        # This could be updated to put fileEncoding into a settings {} dictionary, but like... why? There needs to be more variables handed in for it to be worth it. What more variables should be handed in?
-        mySpreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, characterDictionary=characterDictionary)
+        # This could be updated to put fileEncoding into a settings {} dictionary, but like... why? There needs to be more variables handed in for it to be worth it. What more variables should be handed in? #Update: Just dump it in there in order to present a uniform API for user experience reasons.
+#        mySpreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, characterDictionary=characterDictionary)
     #elif parseSettingsDictionary == None:
-    else:
+#    else:
         # This syntax assumes there is no parseSettings.ini since that is defined within the file. If parseSettings.ini is required, then this syntax will fail.
-        mySpreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, characterDictionary=characterDictionary)
+#        mySpreadsheet = customParser.input(rawFileNameAndPath, parseSettingsDictionary, fileEncoding=rawFileEncoding, characterDictionary=characterDictionary)
+    # New API.
+    mySpreadsheet=customParser.input( rawFileNameAndPath, characterDictionary=characterDictionary, settings=settings )
+
 
     if (debug == True) and (mySpreadsheet != None):
         mySpreadsheet.printAllTheThings()
@@ -515,6 +523,7 @@ def parseRawFile(
 
 
 # This takes the translated spreadsheet and returns a string that represents the translated version of file rawFileName.
+# This should probably be moved into main() for simplicity's sake. Having an extra function passing around so many paramaters just makes things more confusing and only being invoked once instead of reused sort-of implies that it is part of the same logic anyway.
 def insertTranslatedText(
             rawFileName,
             spreadsheetFileName,
@@ -588,7 +597,7 @@ def main():
     userInput=createCommandLineOptions()
 
     # Verify input.
-    userInput=validateUserInput(userInput) # This should also read in all of the input files.
+    userInput=validateUserInput(userInput) # This should also read in all of the input files except for the parseScript.py.
 
     if debug==True:
         print( ('userInput='+str(userInput) ).encode(consoleEncoding) )
@@ -620,6 +629,7 @@ def main():
         if userInput[ 'testRun' ] != True:
             # Writing operations are always scary, so mySpreadsheet.export() should always print when it is writing output internally. No need to do it again here.
             mySpreadsheet.export( userInput[ 'spreadsheetFileName' ], fileEncoding=userInput[ 'spreadsheetFileEncoding' ] )
+
 
     elif userInput[ 'mode' ] == 'output':
         # parseOutput()
