@@ -659,13 +659,20 @@ def main():
             #userInput exists
             with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
                 myFileHandle.write(translatedTextFile)
+        elif isinstance( translatedTextFile, list ) == True:
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
+                for entry in translatedTextFile:
+                    # This might corrupt the output on Linux/Unix or vica-versa on Windows if the software is expecting and requires a specific type of newline \r\n or \n.
+                    # By default, Python will translate \n based upon the host OS, not what the software that will actually read the file is expecting because it cannot possibly know that, therefore this is a potential source of corruption.
+                    # A sane way of handling this is to maybe determine the line ending of the original file and use that line ending schema here. How are line endings determined? Huristics? How does Python determine line endings correctly when the platform does not match the source file?
+                    myFileHandle.write(entry + '\n')
         elif translatedTextFile == None:
             print('Empty file.')
         else:
             print( 'Error: Unknown type of return value from parsing script. Must be a chocolate.Strawberry() or string.')
             print( 'type=' +  str( type(translatedTextFile) ) )
 
-        # chocolate.Strawberry() will print out its own confirmation of writing out the file, so do not duplicate that message here.
+        # chocolate.Strawberry() will print out its own confirmation of writing out the file on its own, so do not duplicate that message here.
         if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
             print( ('Wrote: '+ userInput[ 'translatedRawFileName' ]).encode(consoleEncoding) )
 

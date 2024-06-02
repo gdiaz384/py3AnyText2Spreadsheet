@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-Description: This file parses a ddsystem.txt file, https://vndb.org/r?f=fwDDSystem- , as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
+Description: This file parses a ddsystem.txt file, https://vndb.org/r?f=fwDDSystem- , as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file. A chocolate.Strawberry() is a type of spreadsheet that exists only in memory.
 
 # API concept art:
 # input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
@@ -76,6 +76,7 @@ else:
 # characterDictionary may or may not exist, so set it to None by default.
 # Old API:
 #def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+# New API:
 def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
@@ -112,27 +113,28 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
         assert( line[0:1]=='◆' )
 
         # These appear to be untranslatable lines because they describe characters, their outfits, expressions and use @ and _ syntaxes.
-        if line.find( '@' ) != -1:
-            continue
+        # Update: It might be that none of the code lines have \n, and every dialogue line has \n. Is that correct, or are there any counter examples?
+#        if line.find( '@' ) != -1:
+#            continue
 
-        if line.find( '_' ) != -1:
-            continue
+#        if line.find( '_' ) != -1:
+#            continue
 
         # Ignore lines where the the last character is a number.
-        if line[-1:].isdigit() == True:
-            continue
+#        if line[-1:].isdigit() == True:
+#            continue
 
         # Ignore lines where the 2nd to last character is a number.
-        if line[-2:-1].isdigit() == True:
-            continue
+#        if line[-2:-1].isdigit() == True:
+#            continue
 
         # Ignore lines where the 3rd to last character is a number if the 2nd to last is also an underscore.
 #        if ( line[-3:-2].isdigit() == True ) and ( line[-2:-1] == '_' ):
 #            continue
 
         # Ignore lines if the last three characters end in "dat" after converting it to lowercase.
-        if line[-3:].lower() == 'dat':
-            continue
+#        if line[-3:].lower() == 'dat':
+#            continue
 
         #Next, process the string.
         speaker = None
@@ -141,37 +143,26 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
         # There is always an address/code in between two ◆. Store it as metadata along with the line number.
         codeForMetadata = line[ 1: line.rfind( '◆' ) ]
 
-        # The code has been processed, so remove it now.
+        # The address/code has been processed, so remove it now.
         line=line[1:].partition('◆')[2]
 
         # One off fixes.
 #        if ( line.startswith('bg_') ) or ( line =='black' ) or ( line.startswith('ev_') ):
-        if line =='black': # What does this mean?
-            continue
+#        if line =='black': # What does this mean?
+#            continue
 
-        # if the line starts with \n then ignore the first character.
+        # if the line starts with \n then ignore the first character and set the line equal the the rest of the line.
         if line[ :2 ] == r'\n':
-            line=line[ 2: ]
-
-        # if the line has a new line character, right next to an "「" then it might be the part before that is the speaker's name => "\n「" Do not store the new line character.
-
-        if line.find(r'\n') != -1:
-            index=line.find(r'\n')
+            line=line[ 2: ].strip() #Added .strip() to ensure no whitespace.
+            #speaker=None
+        else:
+            # if the line has a new line character, right next to an "「" then it might be the part before that is the speaker's name => "\n「" Do not store the new line character.
+            #if line.find(r'\n') != -1:
+            #index=line.find(r'\n')
             # if the first character after \n is '「'
-            if line[index+2:index+3] in speakerNameDelimiterList:
-                speaker=line.partition( r'\n' )[0].strip()
-                line=line.partition( r'\n' )[2].strip()
-
-            # Old code.
-#            if line.find(index+2:index+3) == '「':
-#                speaker=line.partition( r'\n' )[0].strip()
-#                line=line.partition( r'\n' )[2].strip()
-#            if line.find(index+2:index+3) == '（':
-#                speaker=line.partition( r'\n' )[0].strip()
-#                line=line.partition( r'\n' )[2].strip()
-#            if line.find(index+2:index+3) == '『':
-#                speaker=line.partition( r'\n' )[0].strip()
-#                line=line.partition( r'\n' )[2].strip()
+            #if line[index+2:index+3] in speakerNameDelimiterList:
+            speaker=line.partition( r'\n' )[0].strip()
+            line=line.partition( r'\n' )[2].strip()
 
         if ( speaker != None ) and ( characterDictionary != None ):
             if speaker in characterDictionary:
@@ -181,9 +172,9 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
         # if the line ends in _ then ignore it the _ at the end, up to a max of 3 characters/reptitions.
         # This is probably not necessary since lines with _ at the end are assumed to be code.
-        for i in range(3):
-            if line[-1:] == '_':
-                line=line[:-1]
+#        for i in range(3):
+#            if line[-1:] == '_':
+#                line=line[:-1]
 
         # Whatever is left is the contents of the line. Append everything found so far to temporaryList.
         temporaryList.append( [ line, speaker, currentLineNumber, codeForMetadata ] )
@@ -194,7 +185,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     # Very important: Create the correct header.
     mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
 
-    # Add data entries.
+    # Add data entries and format metadata column appropriately.
     for entry in temporaryList:
         mySpreadsheet.appendRow( [ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + entry[3] ])
 
@@ -229,6 +220,7 @@ def fixString(string, encoding):
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
 # Old API:
 #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+# New API:
 def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
 
     assert isinstance(mySpreadsheet, chocolate.Strawberry)
@@ -253,7 +245,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
                 # Then assume it is already valid as-is.
                 outputColumn=settings[ 'outputColumn' ]
             else:
-                # This sets outputColumn to a string like 'D' or None if the search string was not found.
+                # This sets outputColumn to a string like 'D'. If the search string was not found, then the function returns None.
                 outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
                 if outputColumn == None:
                     try:
@@ -267,68 +259,104 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     else:
         outputColumn=defaultOutputColumn
 
-    # The input file is actually a .csv which is a type of spreadsheet already, so do the lazy thing and convert it into a chocolate.Strawberry()
-    tempSpreadsheet = chocolate.Strawberry( fileNameWithPath, fileEncoding=settings['fileEncoding'], removeWhitespaceForCSV=True )
+    # The input file is actually a .txt file so read it in and convert it into a list of strings.
+    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+        inputFileContents = myFileHandle.read().splitlines()
 
-    rawDataColumnOriginal = tempSpreadsheet.getColumn( 'D' )
-    metadataColumnOriginal = tempSpreadsheet.getColumn( 'A' )
-
-    translatedData = mySpreadsheet.getColumn( outputColumn )
-    speakerDataFromNew = mySpreadsheet.getColumn( 'B' )
+    # Get the untranslated lines, the translated lines, and related metadata.
+    untranslatedLines = mySpreadsheet.getColumn( 'A' )
+    translatedLines = mySpreadsheet.getColumn( outputColumn )
+    speakerListAfterTranslation = mySpreadsheet.getColumn( 'B' )
     metadataColumnNew = mySpreadsheet.getColumn( 'C' )
 
-    assert ( len(rawDataColumnOriginal) == len(translatedData) )
-    assert ( len(rawDataColumnOriginal) == len(speakerDataFromNew) )
-    assert ( len(rawDataColumnOriginal) == len(metadataColumnNew) )
+    # Spreadsheets start with row 1 but row 1 contains headers. Therefore, row 2 is the first row with valid data. However, the 'correct' row number has all the data put into a series lists for processing. Lists begin their indexes at 0, so decrement 1 in order to get the correct 2nd item in the spreadsheet.
+    currentRow=2 - 1
+    nextTranslatedLine=None
+    #metadataFromSpreadsheet=None
+    #hasEmptyLineAtTheStartOfTheSecondPart=False
 
-    # The metadataColumnOriginal[counter] must match metadataColumnNew[counter] for every entry after the first row or something is corrupt.
-    # The output also needs to be formatted with new lines.
-    # If the character name/speaker is present, it must be prepended before the first line of the dialogue. It should also be in the rawDataColumnOriginal at the start of the data in the untranslated form.
-    # The translatedData does not have any new lines, so they need to be inserted manually. The number of lines should be taken from the rawDataColumnOriginal while considering whether or not the number of new lines includes a line for the speaker.
-    # Sounds complicated. Do it later. Just do a blind replace for now and hope for the best.
+    for currentLineNumber,currentLine in enumerate(inputFileContents):
+        if nextTranslatedLine == None:
+            nextTranslatedLine=metadataColumnNew[currentRow].partition(metadataDelimiter)[0]
+            metadataFromSpreadsheet=metadataColumnNew[currentRow].partition(metadataDelimiter)[2]
+            #currentSpeakerForLineFromFile=None
+            #hasEmptyLineAtTheStartOfTheSecondPart=False
 
-    # Spreadsheet row numbers start with 1, not 0. Setting this to 0 will result in an off-by-1 error and have the target translations up-shifted by 1 cell.
-    currentRow=1
-    for counter,translationRaw in enumerate(translatedData):
-        if counter == 0:
-            currentRow+=1
+        # Keep going until the next line that has a translation in the spreadsheet.
+        if currentLineNumber < nextTranslatedLine:
             continue
 
-        assert ( metadataColumnOriginal[counter] == metadataColumnNew[counter] )
+        # Do a sanity check on the metadata now.
+        # There is always an address/code in between two ◆. Store it as metadata for the current line.
+        metadataFromFile = currentLine[ 1: currentLine.rfind( '◆' ) ]
+        assert( metadataFromFile == metadataFromSpreadsheet )
 
-        if speakerDataFromNew[counter] != None:
-            untranslatedSpeakerName=None
-            # Find original speaker name.
-            # There is no way to verify the speaker is correct without characterDictionary because speakerDataFromNew[counter] presumably has the translated name and there is no way to get back the original string to compare with the start of rawDataColumnOriginal[counter]. That mapping of the post-translated name to the original name can only be provided by characterDictionary.
-            if characterDictionary != None:
-                if speakerDataFromNew[counter] in characterDictionary.values():
-                    # Find the untranslated name.
+        # The code has been processed, so get the rest of the line now.
+        secondPartOfLineRaw=currentLine[1:].partition('◆')[2]
+
+        # This might be a mistake. If there is a \n in the line, odds are that before it is the speaker name, but a \n at the start might mean a deliberately empty speaker name. A second \n means a line break in the dialogue script (untested). Therefore, it might be required that every dialogue line have a \n. Are there any counter examples? # Update: That is exactly what it means, probably. No counter examples were located.
+        secondPartOfLine=None
+        # if the line starts with \n then save that information, and then continue processing the string.
+        if secondPartOfLineRaw[ :2 ] == r'\n':
+            currentSpeakerForLineFromFile=None
+            secondPartOfLine=secondPartOfLineRaw[ 2: ]
+        else:
+            #secondPartOfLine=secondPartOfLineRaw
+            # if the line has a new line character, right next to an "「" or similar limited characters, then the part before that might be the speaker's name. syntax example: "\n「" Do not strip whitespace.
+            if secondPartOfLineRaw.find(r'\n') == -1:
+                print( 'Unspecified error parsing data.' )
+                sys.exit( 1 )
+            else:
+                index=secondPartOfLineRaw.find(r'\n')
+                # if the first character after \n is '「'
+                #if secondPartOfLineRaw[index+2:index+3] in speakerNameDelimiterList:
+                currentSpeakerForLineFromFile=secondPartOfLineRaw.partition( r'\n' )[0]
+                #speakerDelimiter=r'\n'
+                secondPartOfLine=secondPartOfLineRaw.partition( r'\n' )[2]
+
+        # Sanity check that the line has the untranslated contents.
+        assert( secondPartOfLine.find( untranslatedLines[currentRow] ) != -1 )
+
+        # Sanity check the speaker name, if any. The only way to do this is to use the characterDictionary for the mapping of untranslated to translated names.
+        if currentSpeakerForLineFromFile != None:
+            # then assert that the speaker from the spreadsheet is not None.
+            assert( speakerListAfterTranslation[currentRow] != None )
+            if isinstance( characterDictionary, dict) == True:
+                if speakerListAfterTranslation[currentRow].strip() in characterDictionary.values():
+                    untranslatedSpeakerName=None
                     for key,value in characterDictionary.items():
-                        if value == speakerDataFromNew[counter]:
+                        # Retrieve the speaker name from the current row in the spreadsheet and reverse translate it back to the untranslated name
+                        if speakerListAfterTranslation[currentRow].strip() == value:
                             untranslatedSpeakerName=key
                             break
-                    if untranslatedSpeakerName != None:
-                        assert ( rawDataColumnOriginal[counter].strip().startswith(untranslatedSpeakerName) )
+                    # assert the un-translated name from speakerListAfterTranslation[currentRow] is the same as the currentSpeaker for the current line from the input file in order to validate the translated speaker entry: speakerListAfterTranslation[currentRow] 
+                    # assert ( currentSpeakerForLineFromFile.find( untranslatedSpeakerName )  != -1 ) # Which of these are better logic?
+                    assert( untranslatedSpeakerName == currentSpeakerForLineFromFile.strip() ) # The intent is more clear here.
+                #elif currentSpeakerForLineFromFile not in characterDictionary.values():
+                else:
+                    print( ( 'Warning: The character dictionary does not have the name \''+ speakerListAfterTranslation[currentRow] + '\' at row number '+ str(currentRow+1) + '.' ).encode(consoleEncoding) )
+        #elif currentSpeakerForLineFromFile == None:
+#        else:
+            # Change from None to empty string to simplify the replacement logic later. #Incorrect. The name needs to come from speakerListAfterTranslation[currentRow]
+            #currentSpeakerForLineFromFile=''
 
-        # At this point, both the metadata and the speaker, if any, match. That should mean the data is safe to process.
-        # Just do a blind replace for now and hope for the best.
-
-        if speakerDataFromNew[ counter ] == None:
-            tempTranslatedData = translationRaw
-        else:
-            tempTranslatedData = speakerDataFromNew[counter]+ '\n' + translationRaw
-
-        # Fix a few more one off things.
+        # Fix a few more one off things in the post-translated data. Sort of like post-processing? Word wrap, if any, should be done here.
         # This replaces all non-valid cp932 characters with empty strings. There is a warning printed about this if it happens.
-        tempTranslatedData=fixString(tempTranslatedData, defaultTargetEncoding)
+        tempTranslatedData=fixString(translatedLines[currentRow], defaultTargetEncoding)
 
-        # Now that the data has been processed, insert it into the spreadsheet in memory.
-        # The correct location is the current row at Column E.
-        tempSpreadsheet.setCellValue( 'E' + str(currentRow), tempTranslatedData )
+        # The line number was validated. The metadata was validated. The speaker, if any, was validated. The translated value is in the spreadsheet is exists, probably. Now it is time to rebuild the string from scratch and replace the line in the file with this new string.
 
-        # Increment the current row, and then go to the next entry.
-        currentRow += 1
+        # How it gets built differs depending upon if there is a speaker or not. This could be updated to be simpler, but whatever.
+        if speakerListAfterTranslation[currentRow] == None:
+            newString='◆' + metadataFromFile + '◆' + r'\n' + tempTranslatedData
+        else:
+            newString='◆' + metadataFromFile + '◆' + speakerListAfterTranslation[currentRow] + r'\n' + tempTranslatedData
 
-    # Once tempSpreadsheet is fully updated, just send it back to the calling function so it can be written out to disk.
-    # The calling function will check if it is a chocolate.Strawberry(), and if not, then assume it is a string that needs to be written out as-is so there is no need to handle converting it into a string here.
-    return tempSpreadsheet
+        # Update the input file and move on to the next entry.
+        inputFileContents[currentLineNumber] = newString
+        currentRow+=1
+
+    # Once inputFileContents is fully updated, just send it back to the calling function so it can be written out to disk.
+    # The calling function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
+    return inputFileContents
+
