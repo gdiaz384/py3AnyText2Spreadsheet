@@ -388,7 +388,6 @@ def validateUserInput(userInput):
         userInput[ 'characterDictionary' ] = None
 
     # This cannot be fully validated, checked to see if it exists, because the spreadsheet needs to be parsed first. So far, only the file name has been validated, so only setting a default value can be done at this point.
-    #userInput[ 'columnToUseForReplacements' ]
     if userInput[ 'columnToUseForReplacements' ] == None:
         userInput[ 'columnToUseForReplacements' ] = defaultOutputColumn
 
