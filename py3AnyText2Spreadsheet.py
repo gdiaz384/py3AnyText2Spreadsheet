@@ -19,7 +19,7 @@ Is it even possible to parse XML and HTML without knowing the structure in advan
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
-__version__='2024.05.30 alpha'
+__version__='2024.06.06 alpha'
 
 
 # Set defaults.
@@ -390,6 +390,9 @@ def validateUserInput(userInput):
     # This cannot be fully validated, checked to see if it exists, because the spreadsheet needs to be parsed first. So far, only the file name has been validated, so only setting a default value can be done at this point.
     if userInput[ 'columnToUseForReplacements' ] == None:
         userInput[ 'columnToUseForReplacements' ] = defaultOutputColumn
+        userInput[ 'outputColumnIsDefault' ]=True
+    else:
+        userInput[ 'outputColumnIsDefault' ]=False
 
     if userInput[ 'debug' ] == True:
         userInput[ 'verbose' ] = True
@@ -515,7 +518,6 @@ def parseRawFile(
     # New API.
     mySpreadsheet=customParser.input( rawFileNameAndPath, characterDictionary=characterDictionary, settings=settings )
 
-
     if (debug == True) and (mySpreadsheet != None):
         mySpreadsheet.printAllTheThings()
     return mySpreadsheet
@@ -533,7 +535,8 @@ def insertTranslatedText(
             parseSettingsFile=None, 
             parseSettingsFileEncoding=defaultTextFileEncoding,
             characterDictionary=None,
-            outputColumn=defaultOutputColumn
+            outputColumn=defaultOutputColumn,
+            outputColumnIsDefault=None
             ):
 
     global tempParseScriptPathAndName
@@ -565,6 +568,10 @@ def insertTranslatedText(
     settingsDictionary[ 'parseSettingsDictionary'] = parseSettingsDictionary
     #settingsDictionary[ 'characterDictionary'] = characterDictionary # This should be passed directly.
     settingsDictionary[ 'outputColumn' ] = outputColumn
+    #settingsDictionary[ 'outputColumnIsDefault' ] = userInput[ 'outputColumnIsDefault' ]
+    #Workaround
+    if outputColumnIsDefault != None:
+        settingsDictionary[ 'outputColumnIsDefault' ]=outputColumnIsDefault
 
     #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 #    myString=customParser.output(
@@ -593,13 +600,13 @@ def main():
 
     # Define command line options.
     # userInput is a dictionary.
-    userInput=createCommandLineOptions()
+    userInput = createCommandLineOptions()
 
     # Verify input.
-    userInput=validateUserInput(userInput) # This should also read in all of the input files except for the parseScript.py.
+    userInput = validateUserInput( userInput ) # This should also read in all of the input files except for the parseScript.py.
 
     if debug==True:
-        print( ('userInput='+str(userInput) ).encode(consoleEncoding) )
+        print( ( 'userInput=' + str(userInput) ).encode(consoleEncoding) )
 
     if userInput['mode'] == 'input':
         #parseInput()
@@ -643,7 +650,8 @@ def main():
                 parseSettingsFile=userInput[ 'parseSettingsFile' ],
                 parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ],
                 characterDictionary=userInput[ 'characterDictionary' ],
-                outputColumn=userInput[ 'columnToUseForReplacements' ]
+                outputColumn=userInput[ 'columnToUseForReplacements' ],
+                outputColumnIsDefault=userInput[ 'outputColumnIsDefault' ]
         )
 
         if debug == True:

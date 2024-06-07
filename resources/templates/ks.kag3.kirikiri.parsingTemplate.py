@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-Description: This file parses a KAG3.ks file as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
+Description: This script parses a KAG3.ks file as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
 
 # Concept art and description:
 # input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
 
-Usage: This file is meant to be run as py3Any2Spreadsheet('templates\KAG3.py')
+Usage: This script is meant to be run as py3Any2Spreadsheet('templates\KAG3.py')
 
 Within py3Any2Spreadsheet.py, it can be run as:
 parsingScript='templates\KAG3.py'
