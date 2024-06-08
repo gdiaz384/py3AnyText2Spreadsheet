@@ -26,7 +26,7 @@ Sometimes multiple lines per entry represent different speakers if each line is 
 SRTs have some light formatting as well, so use some .SRT specific quirks like {} always being at the start, '<>' always existing in pairs as '<>data<>', to strip that unwanted formatting information and re-insert it based upon original lines after translation.
 
 External Dependencies:
-This file uses the pysrt library: https://pypi.org/project/srt/
+This file uses the pysrt library: https://pypi.org/project/pysrt/
 It must be installed using pip as: pip install pysrt
 Developed using pysrt==1.1.2
 Tried the 'srt' library, but it does not work -at all- when used with actual data.

@@ -97,46 +97,14 @@ else:
 # output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
 
 
-# This stripFormatting() function leaves \n alone.
-# Strips {} if they occur at the start of the string.
-# strips <> if they occur at both the start and the end of the string.
-def stripFormatting(string):
-    if ( string[ 0:1 ] == '{' ) and ( string.find( '}' ) != -1 ):
-        #index=string.find( '}' )
-        #removeMe=string[ 0 : index+1 ]
-        #string=string.replace( removeMe, '' ).strip()
-        string=string.replace( string[ 0 : string.find( '}' )+1 ] , '' ).strip()
-
-    if ( string.find( '<' ) != -1 ) and ( string.find( '>' ) != -1 ):
-        counter=0
-        while ( string.find( '<' ) != -1 ) and ( string.find( '>' ) != -1 ):
-            #index1=string.find( '<' )
-            #index2=string.find( '>' )
-            #string=string[ index1+1 : index2+1 ]
-            #removeMe=string[ string.find( '<' ) : string.find( '>' )+1 ]
-            #string=string.replace( removeMe, '' ).strip()
-            #print(string)
-            string=string.replace( string[ string.find( '<' ) : string.find( '>' )+1 ] , '' ).strip()
-            #print(string)
-            counter+=1
-            if counter > 10:
-                print( ('error processing string: '+ string).encode(consoleEncoding) )
-                print('removeMe='+ string[ string.find( '<' ) : string.find( '>' )+1 ])
-                print('string.find( '<' )=', string.find( '<' ) )
-                print('string.find( '>' )=' + str( string.find( '>' ) ) )
-                print('counter=' + str( counter ) )
-                break
-        #print('string=',string)
-    return string
-
-
 #This needs to convert '<span class='pie'><ruby>膳<rt>ぜ</rt>所<rt>ぜ</rt></ruby>から</span>' to '膳所から' 
 #<outerTag class='pie><innerTag><nestedTag></nestedTag></innerTag></outerTag>
-def extractKanji( string, innerTag=None, nestedTag=None, removeOuter=True):
-    if ( string == None)  or ( string == '' ):
+def extractKanjiFromRubyXHTML( string, innerTag=None, nestedTag=None, removeOuter=True):
+    if ( string == None ) or ( string == '' ):
         return None
     if ( string.find('<') == -1 ) or ( string.find('>') == -1 ):
         return string
+    #string=str(string)
 
     if removeOuter == True:
         # This removes the counter tag. Example: '<span class='pie'>stuff<span>'  =>  'stuff'
@@ -148,7 +116,7 @@ def extractKanji( string, innerTag=None, nestedTag=None, removeOuter=True):
         return string
 
     innerTagStart='<' + innerTag
-    innerTagEnd='</ + innerTag + '>'
+    innerTagEnd='</' + innerTag + '>'
 
     if nestedTag != None:
         # Lazy.
@@ -159,23 +127,29 @@ def extractKanji( string, innerTag=None, nestedTag=None, removeOuter=True):
     # Example: 'pie<ruby>pie2<rt>ぜ</rt>所<rt>ぜ</rt></ruby>pie3' => 'piepie2<rt>ぜ</rt>所<rt>ぜ</rt>pie3'
     # Then, if there is a nested tag defined, it removes all contents between the nested tags.
     # Example: 'piepie2<rt>ぜ</rt>所<rt>ぜ</rt>pie3' => 'piepie2所pie3'
+    # This parsing algorithim is slightly improper. Besides using unnecessary while loops, it should extract the text between <ruby>text</ruby>, process that, then replace it in the original string with the processed result, and then move on to the next <ruby> pair. The current logic treats nested tags as independent from the inner tags which is incorrect. The logic is nested to emphasize the relationship, but the code itself does not reflect that relationship adequately.
+    # It does work however.
     while ( string.find( innerTagStart ) != -1 ) and ( string.find( innerTagEnd ) != -1 ):
         # Remove the first innerTagEnd that appears starting from the left.
-        string=string.replace( innerTagEnd, '' , count=1)
+        string=string.replace( innerTagEnd, '' , 1)
         # Remove innerTagStart after appending the closing >
         # Take, the end of the inner tag as the start index, '<innerTag' + 9, and search the rest of the string for the first >
         tempSearchString=string[ string.find(innerTagStart) + len(innerTagStart) : ]
         innerTagStartFull=innerTagStart + tempSearchString[ : tempSearchString.find('>') + 1 ]
-        string=string.replace( innerTagStartFull, '' , count=1)
+        string=string.replace( innerTagStartFull, '' , 1)
 
+        # Using while loops always results in an infinite loop sooner or later. Maybe count the total number of instances and then use a 'for range(count)' loop instead? That is a less natural way of solving the problem, but less error prone as well. while loops are too high risk.
         if nestedTag != None:
             while ( string.find(nestedTagStart) != -1 ) and ( string.find(nestedTagEnd) != -1 ):
                 startIndex=string.find(nestedTagStart)
                 endIndex=string.find(nestedTagEnd)
                 charactersToRemove=string[string.find(nestedTagStart) : string.find(nestedTagEnd)+len(nestedTagEnd) ]
-                print('charactersToRemove='+charactersToRemove)
-                string.replace( charactersToRemove, '', count=1)
-
+                #print( ( 'charactersToRemove='+charactersToRemove).encode(consoleEncoding) )
+                #print( string.encode(consoleEncoding) )
+                string=string.replace( charactersToRemove, '', 1)
+                #print( string.encode(consoleEncoding) )
+        #sys.exit()
+    return string
 
 
 # This takes fileName, and fileContents, and returns the translatable strings in a list containing lists [ [], [], [] ]
@@ -190,7 +164,7 @@ def parseXHTML( fileName, fileContents ):
     print(fileName)
     temporaryList=[]
 
-    #parse table of contents
+    # Parse table of contents.
     if fileName == 'p-toc-001':
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body span') ): # Search by CSS selector. Perfect.
@@ -199,18 +173,34 @@ def parseXHTML( fileName, fileContents ):
             #print( 'item.text=' + item.text )
         for counter,item in enumerate( mySoup.select('body a') ): # Search by CSS selector.
             # This needs a pre-processor to remove content inside of <ruby> </ruby> tags.
-            # TODO: Put item pre-processor here.
-            #print( 'item=' + item )
-            #print( 'item.text=' + item.text )
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, counter, 'body a' ])
+            # TODO: Put item pre-processor here. Update: Added it.
+            #print( 'item=' + str(item) )
+            #print( 'item.text=' + str(item.text) )
+            if item.text.strip() != '':
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body a' ])
+                else:
+                    #def extractKanjiFromRubyXHTML( string, innerTag=None, nestedTag=None, removeOuter=True):
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    if ( returnedString != None ) and ( returnedString != '' ):
+                        temporaryList.append([ returnedString, None, fileName, counter, 'body a' ])
         return temporaryList
 
     if fileName == 'p-fmatter-001':
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body span') ):
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, None, counter, 'body span' ])
+            if item.text.strip() != '':
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body span' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body span' ])
         return temporaryList
 
     # Old code.
@@ -228,36 +218,92 @@ def parseXHTML( fileName, fileContents ):
     if fileName == 'p-titlepage':
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body div p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, counter, 'body div p' ])
+            if item.text.strip() != '':
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body div p' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body div p' ])
         return temporaryList
 
     if fileName == 'p-001':
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body span') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, counter, 'body span' ])
+            if item.text.strip() != '':
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body span' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body span' ])
         return temporaryList
 
-    if fileName == 'p-002':
+    if ( fileName == 'p-002' ) or ( fileName == 'p-004' ) or ( fileName == 'p-006' ) or ( fileName == 'p-008' ) or ( fileName == 'p-010' ):
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body h2') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, counter, 'body h2' ])
+            if item.text.strip() != '':
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body h2' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body h2' ])
         return temporaryList
 
-    if fileName == 'p-003':
+    pparserList=[ 'p-003', 'p-005', 'p-007', 'p-009', 'p-011', 'p-013', 'p-014']
+    if fileName in pparserList:
         #print(mySoup)
         for counter,item in enumerate( mySoup.select('body p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
-            if item.text != '':
-                temporaryList.append([ item.text, None, fileName, counter, 'body p' ])
-                print( ( 'item=' + str(item)).encode(consoleEncoding) )
-                print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
-                break
+            if item.text.strip() != '':
+                #print( ( 'item=' + str(item)).encode(consoleEncoding) )
+                #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
+                if str(item).find('<ruby') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
         return temporaryList
 
-    return temporaryList
+    if ( fileName == 'p-012' ):
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text.strip() != '':
+                #print( ( 'item=' + str(item)).encode(consoleEncoding) )
+                #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
+                if str(item).find('<span') == -1:
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
+                else:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', nestedTag=None, removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
+        return temporaryList
 
+    if ( fileName == 'p-colophon' ):
+        for counter,item in enumerate( mySoup.select('body p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text.strip() != '':
+                #print( ( 'item=' + str(item)).encode(consoleEncoding) )
+                #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
+                if ( str(item).find('<span') == -1 ) and ( str(item).find('<span') == -1):
+                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
+                elif str(item).find('<span') != -1:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', nestedTag=None, removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
+                elif str(item).find('<ruby') != -1:
+
+    return temporaryList
 
 
 # parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
@@ -309,46 +355,9 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     print( tempList )
     #print( str(tempList).encode(consoleEncoding) )
 
-
-
-
-
-
-
     return None
 
 
-
-
-    temporaryList=[]
-    for counter,subtitle in enumerate( subtitleFile ):
-        formattingRemoved=False
-        #print(counter)
-        #print(subtitle.text)
-        if ( subtitle.text.find('{') != -1 ) or ( subtitle.text.find('<') != -1 ):
-            tempSubs = stripFormatting( subtitle.text )
-            formattingRemoved=True
-        else:
-            tempSubs = subtitle.text
-        if ( tempSubs.find('\n') != -1 ) and ( tempSubs[:1] == '-' ) and ( tempSubs[1:].find( '-' ) != -1 ):
-            # Then is is probably a line with multiple speakers.
-            # Assume that this only has to deal with the simple case of each line being prepended by '- ' with entries lasting one line each.
-            # while loops are always mildly terrifying.
-            tempCounter = 0
-            while ( tempSubs[:1] == '-' ):
-                if tempSubs.find('\n') != -1:
-                    temporaryList.append([ tempSubs[1: tempSubs.find('\n') ].strip(), genericSpeakerName+str(tempCounter), counter, formattingRemoved ])
-                else:
-                    temporaryList.append([ tempSubs[1: ].strip(), genericSpeakerName+str(tempCounter), counter, formattingRemoved ])
-                # If there are no new lines, then this will return an empty string.
-                tempSubs=tempSubs.partition('\n')[2].strip()
-                tempCounter += 1
-                if tempCounter > 10:
-                    print('Unspecified error at sub entry ' + str(counter) + '.')
-                    break
-        else:
-            # list.append([ string, speakerName, currentSubEntry, formattingRemovedOrNot ])
-            temporaryList.append([ tempSubs, None, counter, formattingRemoved ])
 
     # Create a chocolate.Strawberry().
     mySpreadsheet=chocolate.Strawberry()
@@ -484,6 +493,15 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
             #outputColumn=defaultOutputColumn
             outputColumn = len( mySpreadsheet.getRow(1) )
 
+    # Use the for i in soup.select(): i.replace_with() syntax to update the soup.
+    # https://stackoverflow.com/questions/40775930/using-beautifulsoup-to-modify-html
+    # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#replace-with
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.set_content
+
+
+
+
+
     # The input file is actually a .txt file so read it in and convert it into a list of strings.
 #    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
 #        inputFileContents = myFileHandle.read().splitlines()
@@ -572,3 +590,28 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
     return tempString
 
+
+"""
+https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.set_direction
+https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.set_title
+https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.set_content
+
+standard.opf
+<spine page-progression-direction="rtl">
+change to
+<spine page-progression-direction="ltr"
+
+stanard-style.css
+.vrtl {
+  -webkit-writing-mode: vertical-rl;
+  -epub-writing-mode:   vertical-rl;
+}
+/*
+.vltr {
+  -webkit-writing-mode: horizontal-tb;
+  -epub-writing-mode:   horizontal-tb;
+
+change to 
+  -webkit-writing-mode: horizontal-tb;
+  -epub-writing-mode:   horizontal-tb;
+"""
