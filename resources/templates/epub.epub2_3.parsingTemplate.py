@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """
 Description:
-This script parses subrip.srt files, http://en.wikipedia.org/wiki/SubRip , and returns a spreadsheet.
+This script parses EPUB2.epub and EPUB3.epub files, https://en.wikipedia.org/wiki/EPUB , https://idpf.org/epub/30/spec/epub30-contentdocs.html , and returns a spreadsheet.
 It also takes a spreadsheet and outputs the hopefully translated contents back into the file.
 That spreadsheet is implemented as a Strawberry() class found in the chocolate.py library. A chocolate.Strawberry() is a type of spreadsheet that exists only in memory.
 
@@ -12,8 +12,8 @@ output() takes data from a processed spreadsheet and inserts it back into the or
 
 CLI Usage:
 python py3Any2Spreadsheet.py --help
-python py3Any2Spreadsheet.py input subripFile.srt srt.parsingTemplate.py
-python py3Any2Spreadsheet.py output subripFile.srt srt.parsingTemplate.py --spreadsheet subripFile.srt.csv
+python py3Any2Spreadsheet.py input title.epub epub.parsingTemplate.py
+python py3Any2Spreadsheet.py output title.epub srt.parsingTemplate.py --spreadsheet title.epub.csv
 
 py3Any2Spreadsheet.py Usage:
 import 'resources\templates\JSON.VNTranslationTools.py' as customParser # But with fancier/messier import syntax.
@@ -21,21 +21,30 @@ customParser.input()
 customParser.output()
 
 Algorithim:
-SRTs do not usually have speakers, so just extract contents and the entry # as metadata.
-Sometimes multiple lines per entry represent different speakers if each line is prepended by '- ', so fudge the speaker column if there are multiple speakers. 
-SRTs have some light formatting as well, so use some .SRT specific quirks like {} always being at the start, '<>' always existing in pairs as '<>data<>', to strip that unwanted formatting information and re-insert it based upon original lines after translation.
+EPUBs do not usually have speakers, so just extract contents and the metadata.
+The metadata consists of the file name, and entry #.
 
 External Dependencies:
-This file uses the pysrt library: https://pypi.org/project/srt/
-It must be installed using pip as: pip install pysrt
-Developed using pysrt==1.1.2
-Tried the 'srt' library, but it does not work -at all- when used with actual data.
+This file uses the ebooklib library: https://pypi.org/project/EbookLib/
+It must be installed using pip as: pip install ebooklib
+Developed using pip install EbookLib==0.18
+This file uses the beautifulsoup4 library: https://pypi.org/project/beautifulsoup4/
+It must be installed using pip as: pip install beautifulsoup4, lxml
+Developed using pip install beautifulsoup4==4.12.3
+pip install lxml
+
+Links:
+https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
+https://www.w3.org/publishing/epubcheck/docs/getting-started/
+https://beautiful-soup-4.readthedocs.io
 
 Licenses:
-pysrt is GPLv3: https://github.com/byroot/pysrt/blob/master/LICENCE.txt
+EbookLib is AGPLv3: https://github.com/aerkalov/ebooklib/blob/master/LICENSE.txt
+BeautifulSoup4 is MIT/expat: https://www.crummy.com/software/BeautifulSoup/
+
 License for this file: See main program.
 """
-__version__ = '2024.06.06'
+__version__ = '2024.06.07'
 
 
 # Set program defaults.
@@ -56,16 +65,14 @@ inputErrorHandling='strict'
 
 # import stuff
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
-#import os                                                           # Required for srt.compose.
 #import json
 import resources.chocolate as chocolate     # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
 # To import directly, use...
 # sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
 # import chocolate
-import pysrt
-#import srt
-#import srt_tools
-#import srt_tools.utils
+import ebooklib
+import ebooklib.epub
+import bs4
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
 sysVersion=int(sys.version_info[1])
@@ -123,9 +130,138 @@ def stripFormatting(string):
     return string
 
 
+#This needs to convert '<span class='pie'><ruby>膳<rt>ぜ</rt>所<rt>ぜ</rt></ruby>から</span>' to '膳所から' 
+#<outerTag class='pie><innerTag><nestedTag></nestedTag></innerTag></outerTag>
+def extractKanji( string, innerTag=None, nestedTag=None, removeOuter=True):
+    if ( string == None)  or ( string == '' ):
+        return None
+    if ( string.find('<') == -1 ) or ( string.find('>') == -1 ):
+        return string
+
+    if removeOuter == True:
+        # This removes the counter tag. Example: '<span class='pie'>stuff<span>'  =>  'stuff'
+        outerTagOpeningEnd=string.find('>')
+        outerTagClosingStart=string.rfind('<')
+        string=string[ outerTagOpeningEnd+1 : outerTagClosingStart ]
+
+    if innerTag == None:
+        return string
+
+    innerTagStart='<' + innerTag
+    innerTagEnd='</ + innerTag + '>'
+
+    if nestedTag != None:
+        # Lazy.
+        nestedTagStart='<' + nestedTag + '>'
+        nestedTagEnd='</' + nestedTag + '>'
+
+    # This removes the innerTag from the middle of the line.
+    # Example: 'pie<ruby>pie2<rt>ぜ</rt>所<rt>ぜ</rt></ruby>pie3' => 'piepie2<rt>ぜ</rt>所<rt>ぜ</rt>pie3'
+    # Then, if there is a nested tag defined, it removes all contents between the nested tags.
+    # Example: 'piepie2<rt>ぜ</rt>所<rt>ぜ</rt>pie3' => 'piepie2所pie3'
+    while ( string.find( innerTagStart ) != -1 ) and ( string.find( innerTagEnd ) != -1 ):
+        # Remove the first innerTagEnd that appears starting from the left.
+        string=string.replace( innerTagEnd, '' , count=1)
+        # Remove innerTagStart after appending the closing >
+        # Take, the end of the inner tag as the start index, '<innerTag' + 9, and search the rest of the string for the first >
+        tempSearchString=string[ string.find(innerTagStart) + len(innerTagStart) : ]
+        innerTagStartFull=innerTagStart + tempSearchString[ : tempSearchString.find('>') + 1 ]
+        string=string.replace( innerTagStartFull, '' , count=1)
+
+        if nestedTag != None:
+            while ( string.find(nestedTagStart) != -1 ) and ( string.find(nestedTagEnd) != -1 ):
+                startIndex=string.find(nestedTagStart)
+                endIndex=string.find(nestedTagEnd)
+                charactersToRemove=string[string.find(nestedTagStart) : string.find(nestedTagEnd)+len(nestedTagEnd) ]
+                print('charactersToRemove='+charactersToRemove)
+                string.replace( charactersToRemove, '', count=1)
+
+
+
+# This takes fileName, and fileContents, and returns the translatable strings in a list containing lists [ [], [], [] ]
+# each sub list contains [ untranslatedString, speaker=None, fileName, the string sequence counter, css search expression as a string ]
+# The page title does not seem to parse correctly.
+def parseXHTML( fileName, fileContents ):
+    mySoup=bs4.BeautifulSoup( fileContents, features='lxml' ) # For XHTML.
+    assert( mySoup.is_xml != True )
+
+    #print(fileContents)
+    #print(mySoup)
+    print(fileName)
+    temporaryList=[]
+
+    #parse table of contents
+    if fileName == 'p-toc-001':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body span') ): # Search by CSS selector. Perfect.
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body span' ])
+            #print( 'item.text=' + item.text )
+        for counter,item in enumerate( mySoup.select('body a') ): # Search by CSS selector.
+            # This needs a pre-processor to remove content inside of <ruby> </ruby> tags.
+            # TODO: Put item pre-processor here.
+            #print( 'item=' + item )
+            #print( 'item.text=' + item.text )
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body a' ])
+        return temporaryList
+
+    if fileName == 'p-fmatter-001':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body span') ):
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, None, counter, 'body span' ])
+        return temporaryList
+
+    # Old code.
+#    if fileName == 'p-titlepage':
+        #print('pie')
+        #for counter,item in enumerate( mySoup.find_all('a') ):
+#        for counter,item in enumerate( mySoup.find('div', attrs='main').find_all('div') ):
+#            temporaryList.append([ item.text, None, fileName, counter, ( 'find', 'div', 'main' ), find_all ])
+#        for counter,item in enumerate( mySoup.find('div', attrs='main') ):
+#            for counter,item in enumerate( mySoup.find_all('div', attrs='font-120per') ):
+#            temporaryList.append([ item.text, None, fileName, counter, ( 'find', 'div', 'main' ), find_all ])
+        #item0=mySoup.select('div.main div.font-120per p')[0].text
+        #items=mySoup.select('div.main div p') # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+
+    if fileName == 'p-titlepage':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body div p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body div p' ])
+        return temporaryList
+
+    if fileName == 'p-001':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body span') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body span' ])
+        return temporaryList
+
+    if fileName == 'p-002':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body h2') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body h2' ])
+        return temporaryList
+
+    if fileName == 'p-003':
+        #print(mySoup)
+        for counter,item in enumerate( mySoup.select('body p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+            if item.text != '':
+                temporaryList.append([ item.text, None, fileName, counter, 'body p' ])
+                print( ( 'item=' + str(item)).encode(consoleEncoding) )
+                print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
+                break
+        return temporaryList
+
+    return temporaryList
+
+
+
 # parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
 # characterDictionary may or may not exist, so set it to None by default.
-# New API:
 def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
@@ -146,7 +282,43 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 #    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
 #        inputFileContents = myFileHandle.read() #.splitlines()
     # Update, pysrt has a convinence function.
-    subtitleFile = pysrt.open(fileNameWithPath, encoding=fileEncoding)
+    print( 'Reading ebook...' )
+
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
+    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8?
+    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
+    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
+    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
+
+    # This returns file names. 9 means 'ITEM_DOCUMENT'
+    #myEbook.get_items_of_type(9)
+    fileList=[]
+    for htmlFile in myEbook.get_items_of_type(9):
+        #print( htmlFile.get_content() )
+        #print( htmlFile.set_content() )
+        if htmlFile.is_chapter() == True:
+            #htmlFile <-Object
+            fileList.append( ( htmlFile.id, htmlFile.get_content() ) )
+
+    tempList=[]
+    for file in fileList:
+        # This sends ( title, contents )
+        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, the string sequence counter, css search expression as a string ]
+        tempList.append( parseXHTML( file[0], file[1] ) )
+
+    print( tempList )
+    #print( str(tempList).encode(consoleEncoding) )
+
+
+
+
+
+
+
+    return None
+
+
+
 
     temporaryList=[]
     for counter,subtitle in enumerate( subtitleFile ):
