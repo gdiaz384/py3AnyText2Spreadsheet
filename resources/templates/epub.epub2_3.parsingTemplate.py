@@ -22,7 +22,8 @@ customParser.output()
 
 Algorithim:
 EPUBs do not usually have speakers, so just extract contents and the metadata.
-The metadata consists of the file name, and entry #.
+The contents are web pages, so parse them with Beautiful Soup.
+The metadata consists of the file name, search term, and entry #.
 
 External Dependencies:
 This file uses the ebooklib library: https://pypi.org/project/EbookLib/
@@ -40,7 +41,9 @@ https://beautiful-soup-4.readthedocs.io
 
 Licenses:
 EbookLib is AGPLv3: https://github.com/aerkalov/ebooklib/blob/master/LICENSE.txt
+Source Code: https://github.com/aerkalov/ebooklib
 BeautifulSoup4 is MIT/expat: https://www.crummy.com/software/BeautifulSoup/
+Source Code: https://code.launchpad.net/beautifulsoup
 
 License for this file: See main program.
 """
@@ -101,7 +104,7 @@ else:
 #<outerTag class='pie><innerTag><nestedTag></nestedTag></innerTag></outerTag>
 def extractKanjiFromRubyXHTML( string, innerTag=None, nestedTag=None, removeOuter=True):
     if ( string == None ) or ( string == '' ):
-        return None
+        return ''
     if ( string.find('<') == -1 ) or ( string.find('>') == -1 ):
         return string
     #string=str(string)
@@ -138,7 +141,7 @@ def extractKanjiFromRubyXHTML( string, innerTag=None, nestedTag=None, removeOute
         innerTagStartFull=innerTagStart + tempSearchString[ : tempSearchString.find('>') + 1 ]
         string=string.replace( innerTagStartFull, '' , 1)
 
-        # Using while loops always results in an infinite loop sooner or later. Maybe count the total number of instances and then use a 'for range(count)' loop instead? That is a less natural way of solving the problem, but less error prone as well. while loops are too high risk.
+        # Using while loops always results in an infinite loop sooner or later. Maybe count the total number of instances and then use a 'for range(count)' loop instead? That is a less natural way of solving the problem, but less error prone as well. while loops are too high risk. Update this later.
         if nestedTag != None:
             while ( string.find(nestedTagStart) != -1 ) and ( string.find(nestedTagEnd) != -1 ):
                 startIndex=string.find(nestedTagStart)
@@ -161,9 +164,53 @@ def parseXHTML( fileName, fileContents ):
 
     #print(fileContents)
     #print(mySoup)
-    print(fileName)
+    print( str(fileName).encode(consoleEncoding) )
     temporaryList=[]
 
+    for counter,item in enumerate( mySoup.select('body p') ): # Perfect.
+#        if item.text.strip() != '':
+#            if ( str(item).find( '<ruby' ) == -1 ) and ( str(item).find( '<span' ) == -1 ) and ( str(item).find( '<a' ) == -1 ):
+#                temporaryList.append([ item.text.strip(), None, fileName, 'body p', counter ])
+#                continue
+
+        if item.text.strip() != '':
+            returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag=None, nestedTag=None, removeOuter=True )
+            if returnedString.find( '<ruby' ) != -1:
+                returnedString=extractKanjiFromRubyXHTML( returnedString, innerTag='ruby', nestedTag='rt', removeOuter=False )
+            if returnedString.find( '<span' ) != -1:
+                returnedString=extractKanjiFromRubyXHTML( returnedString, innerTag='span', nestedTag=None, removeOuter=False )
+            if returnedString.find( '<a' ) != -1:
+                returnedString=extractKanjiFromRubyXHTML( returnedString, innerTag='a', nestedTag=None, removeOuter=False )
+            if returnedString.find( '<em' ) != -1:
+                returnedString=extractKanjiFromRubyXHTML( returnedString, innerTag='em', nestedTag=None, removeOuter=False )
+            if returnedString.find( '<code' ) != -1:
+                returnedString=extractKanjiFromRubyXHTML( returnedString, innerTag='code', nestedTag=None, removeOuter=False )
+            if returnedString.find( '<br>' ) != -1:
+                returnedString=returnedString.replace( '<br>', '' )
+            if returnedString.find( '<br/>' ) != -1:
+                returnedString=returnedString.replace( '<br/>', '' )
+            returnedString=returnedString.strip()
+            if returnedString != '':
+                temporaryList.append([ returnedString, None, fileName, 'body p', counter ])
+
+    if len(temporaryList) > 0:
+        return temporaryList
+    #else:
+    for counter,item in enumerate( mySoup.select('body h2') ): # Perfect.
+        if item.text.strip() != '':
+            # Old syntax. The one above is better.
+            if str(item).find( '<ruby' ) == -1:
+                temporaryList.append([ item.text.strip(), None, fileName, 'body h2', counter ])
+            else:
+                returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                temporaryList.append([ returnedString, None, fileName, 'body h2', counter ])
+        return temporaryList
+
+    return temporaryList
+
+
+    # Old code.
     # Parse table of contents.
     if fileName == 'p-toc-001':
         #print(mySoup)
@@ -194,16 +241,16 @@ def parseXHTML( fileName, fileContents ):
         for counter,item in enumerate( mySoup.select('body span') ):
             if item.text.strip() != '':
                 if str(item).find('<ruby') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body span' ])
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body span' ])
                 else:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body span' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body span' ])
         return temporaryList
 
-    # Old code.
+    # Very old code.
 #    if fileName == 'p-titlepage':
         #print('pie')
         #for counter,item in enumerate( mySoup.find_all('a') ):
@@ -220,13 +267,13 @@ def parseXHTML( fileName, fileContents ):
         for counter,item in enumerate( mySoup.select('body div p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
             if item.text.strip() != '':
                 if str(item).find('<ruby') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body div p' ])
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body div p' ])
                 else:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body div p' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body div p' ])
         return temporaryList
 
     if fileName == 'p-001':
@@ -234,13 +281,13 @@ def parseXHTML( fileName, fileContents ):
         for counter,item in enumerate( mySoup.select('body span') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
             if item.text.strip() != '':
                 if str(item).find('<ruby') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body span' ])
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body span' ])
                 else:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body span' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body span' ])
         return temporaryList
 
     if ( fileName == 'p-002' ) or ( fileName == 'p-004' ) or ( fileName == 'p-006' ) or ( fileName == 'p-008' ) or ( fileName == 'p-010' ):
@@ -248,11 +295,11 @@ def parseXHTML( fileName, fileContents ):
         for counter,item in enumerate( mySoup.select('body h2') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
             if item.text.strip() != '':
                 if str(item).find('<ruby') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body h2' ])
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body h2' ])
                 else:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body h2' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body h2' ])
         return temporaryList
 
     pparserList=[ 'p-003', 'p-005', 'p-007', 'p-009', 'p-011', 'p-013', 'p-014']
@@ -262,30 +309,36 @@ def parseXHTML( fileName, fileContents ):
             if item.text.strip() != '':
                 #print( ( 'item=' + str(item)).encode(consoleEncoding) )
                 #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
-                if str(item).find('<ruby') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
-                else:
+                if ( str(item).find( '<ruby' ) == -1 ) and ( str(item).find( '<span' ) == -1 ):
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body p' ])
+                elif ( str(item).find( '<ruby' ) != -1 ):
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
+                elif ( str(item).find( '<span' ) == -1 ):
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', nestedTag=None, removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
         return temporaryList
 
     if ( fileName == 'p-012' ):
         #print(mySoup)
-        for counter,item in enumerate( mySoup.select('body p') ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
+        for counter,item in enumerate( mySoup.select( 'body p' ) ): # Perfect. Returns a list with 2 items where calling .text on each item in the list returns only the item.
             if item.text.strip() != '':
                 #print( ( 'item=' + str(item)).encode(consoleEncoding) )
                 #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
                 if str(item).find('<span') == -1:
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body p' ])
                 else:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', nestedTag=None, removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
         return temporaryList
 
     if ( fileName == 'p-colophon' ):
@@ -293,17 +346,29 @@ def parseXHTML( fileName, fileContents ):
             if item.text.strip() != '':
                 #print( ( 'item=' + str(item)).encode(consoleEncoding) )
                 #print( ( 'item.text=' + str(item.text)).encode(consoleEncoding) )
-                if ( str(item).find('<span') == -1 ) and ( str(item).find('<span') == -1):
-                    temporaryList.append([ item.text.strip(), None, fileName, None, counter, 'body p' ])
+                if ( str(item).find( '<ruby' ) == -1 ) and ( str(item).find( '<span' ) == -1 ) and ( str(item).find( '<a href' ) == -1 ):
+                    temporaryList.append([ item.text.strip(), None, fileName, counter, 'body p' ])
                 elif str(item).find('<span') != -1:
                     returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='span', nestedTag=None, removeOuter=True)
                     #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
                     if isinstance(returnedString, str) == True:
                         returnedString=returnedString.strip()
-                    temporaryList.append([ returnedString, None, fileName, None, counter, 'body p' ])
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
                 elif str(item).find('<ruby') != -1:
-
-    return temporaryList
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='ruby', nestedTag='rt', removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
+                elif str(item).find('<a href') != -1:
+                    returnedString=extractKanjiFromRubyXHTML( str(item).strip(), innerTag='a', nestedTag=None, removeOuter=True)
+                    #print( ( 'returnedString=' + str(returnedString) ).encode(consoleEncoding) )
+                    if isinstance(returnedString, str) == True:
+                        returnedString=returnedString.strip()
+                    temporaryList.append([ returnedString, None, fileName, counter, 'body p' ])
+                else:
+                    print( 'unspecified error parsing p-colophon.')
+        return temporaryList
 
 
 # parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
@@ -327,7 +392,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     # The input file is actually an .srt txt file so read it in as-is without convert it into a list of strings.
 #    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
 #        inputFileContents = myFileHandle.read() #.splitlines()
-    # Update, pysrt has a convinence function.
+
     print( 'Reading ebook...' )
 
     # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
@@ -338,26 +403,26 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     # This returns file names. 9 means 'ITEM_DOCUMENT'
     #myEbook.get_items_of_type(9)
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
     fileList=[]
     for htmlFile in myEbook.get_items_of_type(9):
+        #print( 'type=' + str( type(htmlFile) ) )
         #print( htmlFile.get_content() )
         #print( htmlFile.set_content() )
+        #soup.prettify()
         if htmlFile.is_chapter() == True:
             #htmlFile <-Object
             fileList.append( ( htmlFile.id, htmlFile.get_content() ) )
 
-    tempList=[]
+    temporaryList=[]
     for file in fileList:
         # This sends ( title, contents )
-        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, the string sequence counter, css search expression as a string ]
-        tempList.append( parseXHTML( file[0], file[1] ) )
+        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
+        temporaryList.append( parseXHTML( file[0], file[1] ) )
 
-    print( tempList )
-    #print( str(tempList).encode(consoleEncoding) )
-
-    return None
-
-
+    #print( temporaryList )
+    #print( str(temporaryList).encode(consoleEncoding) )
 
     # Create a chocolate.Strawberry().
     mySpreadsheet=chocolate.Strawberry()
@@ -366,9 +431,11 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     mySpreadsheet.appendRow( ['rawText', 'speaker', 'metadata' ] )
 
     # Add data entries and format metadata column appropriately.
-    for entry in temporaryList:
-        # list.append([ string, speakerName, currentSubEntry_formattingRemovedOrNot ])
-        mySpreadsheet.appendRow( [ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + str( entry[3] ) ])
+    for fileContents in temporaryList:
+        if len(fileContents) > 0:
+            for entry in fileContents:
+                # list.append([ string, speakerName, fileNameByID_cssSearchExpression_stringSequenceCounter ])
+                mySpreadsheet.appendRow([ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + str( entry[3] ) + metadataDelimiter + str( entry[4] ) ])
 
     if debug == True:
         mySpreadsheet.printAllTheThings()
@@ -398,46 +465,101 @@ def normalizeEncoding(string, encoding):
     return tempString
 
 
-# translatedString should be after multiple speakers are merged.
-def inferFormatting(originalStringFromSRT, translatedString):
-    if ( originalStringFromSRT.find( '{' ) == -1 ) and ( originalStringFromSRT.find( '<' ) == -1 ):
+# inferFormatting tries to put back the formatting that is in rawEntry back into translatedString. cssSelector is used for the outermost entry.
+def inferFormatting(rawEntry, cssSelector, translatedString):
+    if ( rawEntry.find( '<' ) == -1 ):
         return translatedString
-    #else there are { or < that need to be inserted.
+    #else there are < that need to be inserted.
+    # first, extractKanjiFromRubyXHTML()
 
-    # check if start has {}
-    if originalStringFromSRT.startswith( '{' ) and ( originalStringFromSRT.find( '}' ) != -1 ):
-        #index=originalStringFromSRT.find( '}' )
-        #translatedString=originalStringFromSRT[ 0 : index + 1] + translatedString
-        translatedString=originalStringFromSRT[ 0 : originalStringFromSRT.find( '}' ) + 1] + translatedString
+    # This returns the second css selector in the string. 'body p' => 'p'
+    cssSelector=cssSelector.split()[1]
 
-    if originalStringFromSRT.find( '<' ) == -1:
-        return translatedString
-    #print('pie')
+    tempString='<' + cssSelector + '>' + translatedString + '</' + cssSelector + '>'
 
-    # check if there are <> anywhere
-    numberOfPairs=0
-    tempSearchString=originalStringFromSRT
-    while ( tempSearchString.find( '<' ) != -1 ) and ( tempSearchString.find( '>' ) != -1 ):
-        numberOfPairs+=1
-        tempSearchString=tempSearchString.partition('>')[2]
+    returnedString=extractKanjiFromRubyXHTML( str(rawEntry).strip(), innerTag=None, nestedTag=None, removeOuter=True )
 
-    #print( 'numberOfPairs=', numberOfPairs )
-
-    if numberOfPairs != 2:
-        print( ('Warning: Unsupported number of <tag> formatting ' + str(numberOfPairs) + ' for line: ' + originalStringFromSRT).encode(consoleEncoding) )
+    # if after removing the edges, there are no '<', then it is a simple string with only outer <>.
+    # Append the cssSelector tag to the translatedString and return it as-is.
+    if returnedString.find( '<' ) == -1:
+        return tempString
+    #elif returnedString.find( '<' ) != -1:
+    # There are additional tags in the string, like <span>, <em>, or <ruby>
     else:
-        # if there are two pairs, then assume one pair goes at the start and the other goes at the end.
-        dataForFirstPair=originalStringFromSRT[ originalStringFromSRT.find( '<' ) : originalStringFromSRT.find( '>' ) + 1]
-        tempSearchString=originalStringFromSRT.partition('>')[2]
-        dataForSecondPair=tempSearchString[ tempSearchString.find( '<' ) : tempSearchString.find( '>' ) + 1]
-        translatedString=dataForFirstPair + translatedString + dataForSecondPair
+        # Only support fully enclosing tags and assume the tag at the start is the same as the tag at the end.
+        # Tags in the middle are too complicated to parse since that requires access to a translation engine directly in order to create the correct mapping, or the mapping itself. Without that information, there is no sane way to re-create those mappings of where the tags should go in the post-translated value.
+        if ( returnedString.startswith( '<' ) == True ) and ( returnedString.endswith( '>' ) == True ):
+            #index=
+            startingTag = returnedString[ 0 : returnedString.find( '>' ) + 1 ]
+            endingTag= returnedString[ returnedString.rfind( '<' ) : ]
+            return '<' + cssSelector + '>' + startingTag + translatedString + endingTag + '</' + cssSelector + '>'
+        else:
+            return tempString
 
-        #print('dataForFirstPair=', dataForFirstPair)
-        #print('dataForSecondPair=', dataForSecondPair)
-        #print('tempSearchString=', tempSearchString)
-        #print('translatedString=', translatedString)
 
-    return translatedString
+# This function takes XHTML file contents and translates them based upon the content in parsedList.
+# parsedList is a list of lists where each inner list has the following:
+# [ untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
+def insertIntoXHTML(filename, fileContents, parsedList ):
+    # Sanity check.
+    for entry in parsedList:
+        try:
+            assert( filename == entry[1] )
+        except:
+            print( 'filename=' + str(filename) )
+            print( 'entry[1]=' + str(entry[1]) )
+            raise
+
+    #print(fileContents)
+    #sys.exit(0)
+    #return fileContents #Stub code.
+
+    # Create a new Beautiful Soup.
+    mySoup=bs4.BeautifulSoup( fileContents, features='lxml' ) # For XHTML.
+    #assert( mySoup.is_xml != True )
+
+    #print( fileContents )
+    #print( str(mySoup) )
+    #sys.exit(1)
+
+    #return fileContents
+    #return str(mySoup)
+    #return str(mySoup).encode('utf-8') # Works!
+
+    #print(fileContents)
+    #print(mySoup)
+    print( str(filename).encode(consoleEncoding) )
+
+    # Use the for i in soup.select(): i.replace_with() syntax to update the soup.
+    # https://stackoverflow.com/questions/40775930/using-beautifulsoup-to-modify-html
+    # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#replace-with
+
+    # Very dumb algorithim:
+    # for every entry in parsed List, search using the css search term and update that entry using replacewith.
+    for entry in parsedList:
+        #assert( filename == entry[1] )
+        for counter,item in enumerate( mySoup.select(entry[2]) ): # Perfect.
+            if counter == entry[3]:
+                # There should be code here that detects the original formatting, if any, and tries to replicate it.
+                tempString=entry[4]
+                if item.find('<') != -1:
+                    # entry[4]='<p>' + entry[4] + '</p>'
+                    # inferFormatting( rawentry, css selector, translated entry)
+                    tempString=inferFormatting( str(item), entry[2], entry[4], )
+                #print( ('item=' + str(item)).encode(consoleEncoding) )
+                item.replace_with( bs4.BeautifulSoup( tempString, 'xml' ) )
+                #print( ('item=' + str(item)).encode(consoleEncoding) )
+
+    # Better algorithim:
+    # TODO: put stuff here.
+
+    #print( str(mySoup.prettify()) )
+    return mySoup.prettify()
+#    return mySoup.prettify().partition('\n')[2].partition('\n')[2] # Remove the first two lines.
+    #tempList=mySoup.prettify().partition('<body>')
+    tempList=str(mySoup).partition('<body>')
+    return '<html>' + tempList[1] + tempList[2]
+#    return mySoup
 
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
@@ -493,19 +615,14 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
             #outputColumn=defaultOutputColumn
             outputColumn = len( mySpreadsheet.getRow(1) )
 
-    # Use the for i in soup.select(): i.replace_with() syntax to update the soup.
-    # https://stackoverflow.com/questions/40775930/using-beautifulsoup-to-modify-html
-    # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#replace-with
+    # Algorithim:
+    # For every file, gather the entries that need to be reinserted for that file. Put those entries into a temporary list that has:
+    # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
+    # Send that file to be parsed into a function which returns the translated data.
+    # Use epub.EpubItem.set_content() to update the content in the ebook.
     # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.set_content
-
-
-
-
-
-    # The input file is actually a .txt file so read it in and convert it into a list of strings.
-#    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
-#        inputFileContents = myFileHandle.read().splitlines()
-    subtitleFile = pysrt.open(fileNameWithPath, encoding=fileEncoding)
+    # Write out the ebook natively.
+    # return None to calling function.
 
     # Get the untranslated lines, the translated lines, and related metadata.
     untranslatedLines = mySpreadsheet.getColumn( 'A' )
@@ -513,82 +630,108 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     speakerList = mySpreadsheet.getColumn( 'B' )
     metadataColumn = mySpreadsheet.getColumn( 'C' )
 
-    # Spreadsheets start with row 1 but row 1 contains headers. Therefore, row 2 is the first row with valid data. However, the 'correct' row number has all the data put into a series lists for processing. Lists begin their indexes at 0, so decrement 1 in order to get the correct 2nd item in the spreadsheet.
-    currentRow=2 - 1
-    nextTranslatedLine=None
-    #metadataFromSpreadsheet=None
-    #hasEmptyLineAtTheStartOfTheSecondPart=False
+    # Remove header.
+    # https://www.w3schools.com/python/ref_list_pop.asp
+    untranslatedLines.pop( 0 )
+    translatedLines.pop( 0 )
+    speakerList.pop( 0 )
+    metadataColumn.pop( 0 )
 
-    # the srt entries start at 1, but currentSubtitleCounter starts at 0, therefore, currentSubtitleCounter+1 ==  srt entry # in spreadsheet. The value for srt entry number in spreadsheet can be obtained from metadataColumn.partition(metadataDelimiter)[0]
-    for currentSubtitleCounter,currentSubtitleObjectRaw in enumerate(subtitleFile):
-        # TODO: Put more assertions everywhere to spot errors easier.
-        currentSpeaker=speakerList[ currentRow ]
-        currentSRTEntryNumberTakenFromSpreadsheet=int( metadataColumn[currentRow].partition( metadataDelimiter )[0] )
-        currentLineHasFormatting=metadataColumn[currentRow].partition( metadataDelimiter )[2]
-        if currentLineHasFormatting.lower() == 'true':
-            currentLineHasFormatting=True
-        else:
-            currentLineHasFormatting=False
+    # To gather, take the existing metadata column and split it into 3 parts:
+    # 1) the file name an entry belongs to
+    # 2) the css search selector
+    # 3) and the enumerate() entry #, a counter, for that css search.
+    #metadataColumnRaw = mySpreadsheet.getColumn( 'C' )
+    metadataFileName=[]
+    metadataSearchTerm=[]
+    metadataEntryNumber=[]
+    for entry in metadataColumn:
+        #https://www.w3schools.com/python/ref_string_split.asp
+        #'p-titlepage_body p_4' => [ 'p-titlepage', 'body p', 4 ]
+        tempList=entry.split( metadataDelimiter )
+        metadataFileName.append( tempList[0] )
+        metadataSearchTerm.append( tempList[1] )
+        metadataEntryNumber.append( int( tempList[2] ) )
 
-        # if there is no speaker for the current row, then set the currentTranslatedLine and move on to formatting.
-        if currentSpeaker==None:
-            numberOfEntriesTotalForCurrentSRTEntry=1
-            currentTranslatedLine=translatedLines[currentRow].strip()
+    assert( len(metadataColumn) == len(untranslatedLines) == len(metadataEntryNumber) )
 
-        #elif there is a speaker in the currentRow, then lines need to be merged. They were split for translation, but now they need '- ' prepended before each line and \n between each line (but not at the end).
-        else:
-            #tempString = '- ' + translatedLines[currentRow].strip() + '\n'
-            # Get the data for the next entry and the entry after that until the next line is reached. Next line being reached means would call an index > len( metadataColumn ) value for that cell (or that cell is None?).
-            # Once it no longer matches, that row -1 is the total range of data to pull.
-            # srt does not support speakers, so just ignore the data in the speaker column, but merge the lines from the range using - and \n.
-            tempSearchRange = currentRow
-            counter=0
-            while True:
-                tempSearchRange += 1
-                # Special failure case.
-                if tempSearchRange > len( metadataColumn ):
-                    break
-                tempSRTNumber=int( metadataColumn[ tempSearchRange ].partition(metadataDelimiter)[0] )
-                if tempSRTNumber > currentSRTEntryNumberTakenFromSpreadsheet:
-                    break
-                counter+=1
-                if counter > 10:
-                    print('Unspecified error.')
-                    sys.exit(1)
-            numberOfEntriesTotalForCurrentSRTEntry = tempSearchRange - currentRow
-            #print( 'numberOfEntriesTotalForCurrentSRTEntry=', numberOfEntriesTotalForCurrentSRTEntry )
-            tempString=''
-            for i in range( numberOfEntriesTotalForCurrentSRTEntry ):
-                tempString = tempString + '- ' + translatedLines[ currentRow + i ].strip() + '\n'
-            # This removes the last trailing \n.
-            currentTranslatedLine=tempString.strip()
+    print( 'Reading ebook...' )
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
+    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8? Maybe the encoding is set by the inner .html files or per file.
+    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
+    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
+    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
 
-        # Apply word wrapping.
-        #TODO: Put stuff here.
-        # formattedLine=applyWordWrap(currentTranslatedLine)
+    # This returns file names. 9 means 'ITEM_DOCUMENT'
+    #myEbook.get_items_of_type(9)
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
+    fileList=[]
+    for htmlFile in myEbook.get_items_of_type(9):
+        #print( 'type=' + str( type(htmlFile) ) )
+        #print( htmlFile.get_content() )
+        #print( htmlFile.set_content() )
+        #soup.prettify()
+        if htmlFile.is_chapter() == True:
+            #htmlFile <-Object
+            # [ title, html content, updatedContent ]
+            fileList.append( [ htmlFile.id, htmlFile.get_content(), None ] )
 
-        # Then check if there was any formatting in the original line.
-        currentTranslatedLine=inferFormatting(currentSubtitleObjectRaw.text, currentTranslatedLine)
+    temporaryList=[]
+    # file is itself a list.
+    for file in fileList:
+        # This sends ( title, contents )
+        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
+        #temporaryList.append( parseXHTML( file[0], file[1] ) )
 
-        #output as-is.
-        currentSubtitleObjectRaw.text=currentTranslatedLine
+        # Gather entries that match that file.
+        tempParsedList=[]
+        for counter,filenameFromMetadata in enumerate( metadataFileName ):
+            if file[0] == filenameFromMetadata:
+                # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
+                tempParsedList.append( [ untranslatedLines[counter], filenameFromMetadata, metadataSearchTerm[counter], metadataEntryNumber[counter], translatedLines[counter] ] )
 
-        # Go to next line.
-        currentRow=currentRow + numberOfEntriesTotalForCurrentSRTEntry
+        # Send that file to be parsed into a function which returns the translated data.
+        if len(tempParsedList) > 0:
+            # insertIntoXHTML(filename, raw untranslated content, tempParsedList )
+            #returnedXHTML=insertIntoXHTML( filename, inputFileContents, parsedList )
+            translatedFileContents = insertIntoXHTML( file[0], file[1], tempParsedList )
+            #print(translatedFileContents) #This prints the correctly updated/translated XHTML file.
 
-    # Once the srt object is fully updated, send it back to the calling function so it can be written out to disk.
-    tempString=''
-    # at the very end, go through each object in the subtitleFile and ask it to convert itself to a string.
-    for currentSubtitleObjectRaw in subtitleFile:
-        # Then take each string and stitch them all together (without appending \n).
-        # Well, not appending new lines did not work, so just append them now.
-        tempString=tempString + str(currentSubtitleObjectRaw).strip() + '\n' + '\n'
-    # Once stitched together, call strip() to remove excessive new lines before the string and \n\n after.
-    # Append exactly 1 new line at the end for posix reasons, and then return that string to be written out as a plain text file.
-    tempString=tempString.strip()+'\n'
+            # Use epub.EpubItem.set_content() to update the content in the ebook.
+            # update the item in the list. Lists are pointers. Does this update the original item or not? # Update: This does not actually update anything. Somewhat expected.
+            #file[1]=translatedFileContents
+            # Otherwise... for file in fileList
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents ) #Update: This zeroes out the contents. Why?
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
+            #epub.EpubItem(uid=,content=t
+            #https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubHtml
+            #ebooklib.epub.EpubHtml
+            #print( type( myEbook.get_item_with_id( file[0] )) ) # <class 'ebooklib.epub.EpubHtml'>
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns the full content.
+            #tempEpubHTMLItem=ebooklib.epub.EpubHtml(file_name=file[0] + '.xhtml' , title=file[0], content=translatedFileContents )
+            #tempEpubHTMLItem=ebooklib.epub.EpubItem(file_name=file[0], title=file[0], content=translatedFileContents )
+            #tempEpubHTMLItem.set_content(translatedFileContents)
+            #myEbook.get_item_with_id( file[0] ).set_content( tempEpubHTMLItem )
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents )
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTextEncoding ) )
+            #print( type( myEbook.get_item_with_id( file[0] )) ) <class 'ebooklib.epub.EpubHtml'>
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
+
+            # Okay, figured it out. So .set_content() expects a byte encoded string of all things. Weird. Not, a regular python unicode string like would actually make sense, not an epubhtml() or epubitem() class but a string after .encode() has been called on it to convert it into bytes. Some documentation on this would have been nice, but whatever.
+            # utf-8 is probably the only sane encoding to use here, but leave it configurable using file/module-level defaults.
+            myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTextEncoding ) )
+
+    # Write out the ebook natively.
+    tempOutputName = fileNameWithPath + '.translated.epub'
+    ebooklib.epub.write_epub( tempOutputName, myEbook )
+
+    # return None to calling function.
+    return None
 
     # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
-    return tempString
+    #return tempString
+
 
 
 """

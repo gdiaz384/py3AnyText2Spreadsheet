@@ -217,6 +217,7 @@ def normalizeEncoding(string, encoding):
     return tempString
 
 
+# This function takes the original untranslated string and the translated string and returns the translated string with the formatting present in the untranslated string.
 # translatedString should be after multiple speakers are merged.
 def inferFormatting(originalStringFromSRT, translatedString):
     if ( originalStringFromSRT.find( '{' ) == -1 ) and ( originalStringFromSRT.find( '<' ) == -1 ):
