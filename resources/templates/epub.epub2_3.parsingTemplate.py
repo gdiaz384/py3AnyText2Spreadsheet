@@ -57,7 +57,8 @@ consoleEncoding='utf-8'
 defaultTextEncoding='utf-8'
 defaultOutputColumn=4
 metadataDelimiter='_'
-defaultTargetEncoding='cp932'
+#defaultTargetEncoding='cp932'
+defaultTargetEncoding='utf-8'
 genericSpeakerName='speaker'
 
 #https://docs.python.org/3.7/library/codecs.html#standard-encodings
@@ -71,6 +72,8 @@ import sys                                                         # Used to sys
 #import json
 import resources.chocolate as chocolate     # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
 # To import directly, use...
+# import sys
+# import pathlib
 # sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
 # import chocolate
 import ebooklib
@@ -208,7 +211,6 @@ def parseXHTML( fileName, fileContents ):
         return temporaryList
 
     return temporaryList
-
 
     # Old code.
     # Parse table of contents.
@@ -714,13 +716,13 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
             #tempEpubHTMLItem.set_content(translatedFileContents)
             #myEbook.get_item_with_id( file[0] ).set_content( tempEpubHTMLItem )
             #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents )
-            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTextEncoding ) )
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
             #print( type( myEbook.get_item_with_id( file[0] )) ) <class 'ebooklib.epub.EpubHtml'>
             #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
 
             # Okay, figured it out. So .set_content() expects a byte encoded string of all things. Weird. Not, a regular python unicode string like would actually make sense, not an epubhtml() or epubitem() class but a string after .encode() has been called on it to convert it into bytes. Some documentation on this would have been nice, but whatever.
             # utf-8 is probably the only sane encoding to use here, but leave it configurable using file/module-level defaults.
-            myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTextEncoding ) )
+            myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
 
     # Write out the ebook natively.
     tempOutputName = fileNameWithPath + '.translated.epub'
