@@ -515,9 +515,10 @@ originalString='but welcome back to {\i1}Elder Tale{\i0}, Naotsugu.'
 #'but welcome back to ' + 'Elder Tale' + ', Naotsugu.'
 
 translatedString=r'pero bienvenido de nuevo a Elder Tale, Naotsugu.'
-#\z
+# \z
 translatedString=r'aber willkommen zurück bei Elder Tale, Naotsugu.'
 
+# It is possible to reuse an existing object with a new string. All the internals will also change appropriately. Fancy.
 escapeObject.string=originalString
 print( 'escapeObject.string=', escapeObject.string )
 print( 'escapeObject.asAList=', escapeObject.asAList )
@@ -534,6 +535,6 @@ print( escapeObject.convertTranslatedStringToList( translatedString ) )
 
 print('')
 escapeObject.goLeftForSplitMode=False
-print( escapeObject.getTranslatedStringWithEscapesInserted(translatedString) ) # Beautiful.
+print( escapeObject.getTranslatedStringWithEscapesInserted( translatedString ) ) # Beautiful.
 
 """

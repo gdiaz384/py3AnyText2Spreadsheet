@@ -2,8 +2,8 @@
 # -*- coding: UTF-8 -*-
 """
 Description:
-This script parses substation alpha (.ssa) and advanced substation alpha (.ass) subtitle files, http://en.wikipedia.org/wiki/SubRip , and returns a spreadsheet.
-There is also support for subrip, microdvd, and the other formats that are supported by 
+This script parses substation alpha (.ssa), advanced substation alpha (.ass) subtitle, https://wiki.videolan.org/SubStation_Alpha , and SubRip, http://en.wikipedia.org/wiki/SubRip , files and returns a spreadsheet.
+There is also support for subrip, microdvd, and the other formats that are supported by the pysubs2 library.
 It also takes a spreadsheet and outputs the hopefully translated contents back into the file.
 That spreadsheet is implemented as a Strawberry() class found in the chocolate.py library. A chocolate.Strawberry() is a type of spreadsheet that exists only in memory.
 
@@ -13,11 +13,11 @@ output() takes data from a processed spreadsheet and inserts it back into the or
 
 CLI Usage:
 python py3Any2Spreadsheet.py --help
-python py3Any2Spreadsheet.py input subripFile.srt srt.parsingTemplate.py
-python py3Any2Spreadsheet.py output subripFile.srt srt.parsingTemplate.py --spreadsheet subripFile.srt.csv
+python py3Any2Spreadsheet.py input subtitles.ass ass.parsingTemplate.py
+python py3Any2Spreadsheet.py output subtitles.ass ass.parsingTemplate.py --spreadsheet subtitles.ass.xlsx
 
 py3Any2Spreadsheet.py Usage:
-import 'resources\templates\JSON.VNTranslationTools.py' as customParser # But with fancier/messier import syntax.
+import 'resources\templates\ass.parsingTemplate.py' as customParser # But with fancier/messier import syntax.
 customParser.input()
 customParser.output()
 
@@ -26,7 +26,7 @@ Algorithim:
 .ssa/.ass files have extensive support for formatting, so use ass-tag-parser library to handle it.
 
 External Dependencies:
-This file uses the pysrt library: https://pypi.org/project/pysubs2/
+This file uses the pysubs2 library: https://pypi.org/project/pysubs2/
 It must be installed using pip as: pip install pysubs2
 Developed using pip install pysubs2==1.6.1
 Source code: https://github.com/tkarabela/pysubs2
@@ -34,10 +34,10 @@ This file uses the escapeStuff library: https://github.com/gdiaz384/py3AnyText2S
 Developed using escapeStuff.py==2024.06.20
 
 Licenses:
-pysrt is GPLv3: https://github.com/byroot/pysrt/blob/master/LICENCE.txt
+pysubs2: https://github.com/tkarabela/pysubs2
 License for this file: See main program.
 """
-__version__ = '2024.06.20'
+__version__ = '2024.06.21'
 
 
 # Set program defaults.
@@ -56,81 +56,71 @@ inputErrorHandling='strict'
 
 # Import stuff.
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
-#import os                                                           # Required for srt.compose.
-#import json
-import resources.chocolate as chocolate     # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
-# To import directly, use...
+# import os
+# import pathlib
+# import json
+
+import resources.chocolate as chocolate            # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
+# To import directly:
 # import sys
 # import pathlib
 # sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
 # import chocolate
-import resources.escapeStuff as escapeStuff
-# To import directly, use...
-#import sys.path.append( str( pathlib.Path('C:\\resources\\escapeStuff.py').resolve().parent) )
-#import escapeStuff
+
+import resources.escapeStuff as escapeStuff     # Handles removing and reinserting tags, [], <>, {}, and one off escape sequences into strings.
+# To import directly:
+# import sys
+# import pathlib
+# sys.path.append( str( pathlib.Path('C:\\resources\\escapeStuff.py').resolve().parent) )
+# import escapeStuff
 
 import pysubs2
-
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
 sysVersion=int(sys.version_info[1])
 if sysVersion >= 5:
     outputErrorHandling='namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
+    outputErrorHandling='backslashreplace'
 else:
     sys.exit('Unspecified error.'.encode(consoleEncoding))
 
 
-# input() accepts:
-# - 1) An inputFileName
-# - 2) parseSettingsDictionary has whatever settings were defined in thisScript.ini available as a Python dictionary.
-# - 3) The raw character encoding for the inputFileName (utf-8, shift-jis)
-# - 4) An optional characterDictionary.csv as a Python dictionary. The first row is ignored when going from csv->Python.
+"""
+Development Guide:
+input() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+3) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+input() is responsible for returning a completed chocolate.Strawberry() spreadsheet back to py3AnyText2Spreadsheet so it can be written out to disk.
 
-# input() then needs to create a spreadsheet where the first row is column headers. The first column, column A, has the untranslated dialogue, the second column, Column B, has the speaker for each line, and the third column, Column C, has a string containing whatever metadata is appropriate/required to reinsert the strings and verify where they were extracted from.
+output() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) spreadsheet ; The chocolate.Strawberry() that was created using the input() function and specified at the CLI using the --spreadsheet option will be available here.
+3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+4) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+output() is responsible inserting the translated/completed contents in chocolate.Strawberry() spreadsheet back into fileNameWithPath. Once fileNameWithPath has been updated, it should be sent back as a string, a list of strings, or a chocolate.Strawberry() to be written out to disk.
 
-# Usually metadata for Column C is 1) the line numbers the input is taken from, and possibly 2) total number of lines column A, rawText, represents if there was any line merging done like for kirikiri files. If dialogue was taken from more than one line, then the line number is the last line or whatever makes sense.
+The settings {} dictionary has all of the parameters passed at the CLI and a few others. These in particular are useful:
+settings[ 'fileEncoding' ] - The encoding of rawFile as a string.
+settings[ 'parseSettingsDictionary' ] - The parsingTemplate.ini file as a Python dictionary.
+settings[ 'outputColumn' ] - The columnToUseForReplacements from the CLI as a string. If a number was specified, it can be converted back using int( settings[ 'outputColumn' ] ) . If one was not specified, then settings[ 'outputColumnIsDefault' ] == True.
+settings[ 'translatedRawFile' ] - The filename and path of the file to use when writing the translated file as output.
 
-# output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
-
-
-# This stripFormatting() function leaves \n alone.
-# Strips {} if they occur at the start of the string.
-# strips <> if they occur at both the start and the end of the string.
-def stripFormatting(string):
-    if ( string[ 0:1 ] == '{' ) and ( string.find( '}' ) != -1 ):
-        #index=string.find( '}' )
-        #removeMe=string[ 0 : index+1 ]
-        #string=string.replace( removeMe, '' ).strip()
-        string=string.replace( string[ 0 : string.find( '}' )+1 ] , '' ).strip()
-
-    if ( string.find( '<' ) != -1 ) and ( string.find( '>' ) != -1 ):
-        counter=0
-        while ( string.find( '<' ) != -1 ) and ( string.find( '>' ) != -1 ):
-            #index1=string.find( '<' )
-            #index2=string.find( '>' )
-            #string=string[ index1+1 : index2+1 ]
-            #removeMe=string[ string.find( '<' ) : string.find( '>' )+1 ]
-            #string=string.replace( removeMe, '' ).strip()
-            #print(string)
-            string=string.replace( string[ string.find( '<' ) : string.find( '>' )+1 ] , '' ).strip()
-            #print(string)
-            counter+=1
-            if counter > 10:
-                print( ('error processing string: '+ string).encode(consoleEncoding) )
-                print('removeMe='+ string[ string.find( '<' ) : string.find( '>' )+1 ])
-                print('string.find( '<' )=', string.find( '<' ) )
-                print('string.find( '>' )=' + str( string.find( '>' ) ) )
-                print('counter=' + str( counter ) )
-                break
-        #print('string=',string)
-    return string
+Spreadsheet formatting suggestion: https://github.com/gdiaz384/py3TranslateLLM#regarding-the-spreadsheet-formats
+The format is based on the format used by VNT, T++, and common sense.
+Summary:
+Column A should be the extracted rawText.
+Column B should be the speaker (if any). If there is none, then leave this column blank. If possible, use the characterDictionary to translate any raw names into their translated forms as this is more convenient to translate + edit.
+Column C should be any metadata required to validate and reinsert the contents of Column A and B back into the source text.
+As a suggestion for Column C, use the line numbers the input is taken from or the order the input is parsed in, and any other data that is unique to that entry.
+Example lists that represent a row for different types of data:
+[ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
+[ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number
+"""
 
 
-# parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
-# characterDictionary may or may not exist, so set it to None by default.
-# New API:
 def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
@@ -147,10 +137,10 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     else:
         parseSettingsDictionary=None
 
-    # The input file is actually an .srt txt file so read it in as-is without convert it into a list of strings.
+    # The input file is an .srt txt file. Instead of converting it into a list of strings, use pysubs2.load().
 #    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
 #        inputFileContents = myFileHandle.read() #.splitlines()
-    # Update, pysubs2 has a convinence function.
+    # Update: pysubs2 has a convinence function.
     subtitles = pysubs2.load(fileNameWithPath, encoding=fileEncoding, errors=inputErrorHandling)
 
     #doesNotStartWith=[r'm ', r'b ']
@@ -200,71 +190,6 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
         mySpreadsheet.printAllTheThings()
 
     return mySpreadsheet
-
-
-def checkEncoding(string, encoding):
-    try:
-        string.encode(encoding)
-        return True
-    except UnicodeEncodeError:
-        return False
-
-
-def normalizeEncoding(string, encoding):
-    if checkEncoding(string, encoding) == True:
-        return string
-    # Okay, so, something messed up. What was it? Check character by character and klobber the offender.
-    tempString=''
-    for i in range( len(string) ):
-        if checkEncoding( string[ i : i+1 ], encoding) == True:
-            tempString=tempString+string[ i : i+1 ]
-        else:
-            print( ('Warning: ' + string[ i : i+1 ] + ' cannot be encoded to valid ' + encoding + '.' ).encode(consoleEncoding) )
-    print( ('Warning: Output changed from to: \'' + tempString + '\'').encode(consoleEncoding) )
-    return tempString
-
-
-# This function takes the original untranslated string and the translated string and returns the translated string with the formatting present in the untranslated string.
-# translatedString should be after multiple speakers are merged.
-def inferFormatting(originalStringFromSRT, translatedString):
-    if ( originalStringFromSRT.find( '{' ) == -1 ) and ( originalStringFromSRT.find( '<' ) == -1 ):
-        return translatedString
-    #else there are { or < that need to be inserted.
-
-    # check if start has {}
-    if originalStringFromSRT.startswith( '{' ) and ( originalStringFromSRT.find( '}' ) != -1 ):
-        #index=originalStringFromSRT.find( '}' )
-        #translatedString=originalStringFromSRT[ 0 : index + 1] + translatedString
-        translatedString=originalStringFromSRT[ 0 : originalStringFromSRT.find( '}' ) + 1] + translatedString
-
-    if originalStringFromSRT.find( '<' ) == -1:
-        return translatedString
-    #print('pie')
-
-    # check if there are <> anywhere
-    numberOfPairs=0
-    tempSearchString=originalStringFromSRT
-    while ( tempSearchString.find( '<' ) != -1 ) and ( tempSearchString.find( '>' ) != -1 ):
-        numberOfPairs+=1
-        tempSearchString=tempSearchString.partition('>')[2]
-
-    #print( 'numberOfPairs=', numberOfPairs )
-
-    if numberOfPairs != 2:
-        print( ('Warning: Unsupported number of <tag> formatting ' + str(numberOfPairs) + ' for line: ' + originalStringFromSRT).encode(consoleEncoding) )
-    else:
-        # if there are two pairs, then assume one pair goes at the start and the other goes at the end.
-        dataForFirstPair=originalStringFromSRT[ originalStringFromSRT.find( '<' ) : originalStringFromSRT.find( '>' ) + 1]
-        tempSearchString=originalStringFromSRT.partition('>')[2]
-        dataForSecondPair=tempSearchString[ tempSearchString.find( '<' ) : tempSearchString.find( '>' ) + 1]
-        translatedString=dataForFirstPair + translatedString + dataForSecondPair
-
-        #print('dataForFirstPair=', dataForFirstPair)
-        #print('dataForSecondPair=', dataForSecondPair)
-        #print('tempSearchString=', tempSearchString)
-        #print('translatedString=', translatedString)
-
-    return translatedString
 
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
@@ -320,16 +245,46 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
             #outputColumn=defaultOutputColumn
             outputColumn = len( mySpreadsheet.getRow(1) )
 
-    # The input file is actually a .txt file so read it in and convert it into a list of strings.
-#    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
-#        inputFileContents = myFileHandle.read().splitlines()
-    subtitleFile = pysrt.open(fileNameWithPath, encoding=fileEncoding)
-
     # Get the untranslated lines, the translated lines, and related metadata.
     untranslatedLines = mySpreadsheet.getColumn( 'A' )
     translatedLines = mySpreadsheet.getColumn( outputColumn )
     speakerList = mySpreadsheet.getColumn( 'B' )
     metadataColumn = mySpreadsheet.getColumn( 'C' )
+
+    # Remove header.
+    # https://www.w3schools.com/python/ref_list_pop.asp
+    untranslatedLines.pop( 0 )
+    translatedLines.pop( 0 )
+    speakerList.pop( 0 )
+    metadataColumn.pop( 0 )
+
+    # The input file is actually a .txt file so read it in and convert it into a list of strings.
+#    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+#        inputFileContents = myFileHandle.read().splitlines()
+    #subtitleFile = pysrt.open(fileNameWithPath, encoding=fileEncoding)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    sys.exit(1)
 
     # Spreadsheets start with row 1 but row 1 contains headers. Therefore, row 2 is the first row with valid data. However, the 'correct' row number has all the data put into a series lists for processing. Lists begin their indexes at 0, so decrement 1 in order to get the correct 2nd item in the spreadsheet.
     currentRow=2 - 1

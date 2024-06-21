@@ -13,10 +13,10 @@ output() takes data from a processed spreadsheet and inserts it back into the or
 CLI Usage:
 python py3Any2Spreadsheet.py --help
 python py3Any2Spreadsheet.py input title.epub epub.parsingTemplate.py
-python py3Any2Spreadsheet.py output title.epub srt.parsingTemplate.py --spreadsheet title.epub.csv
+python py3Any2Spreadsheet.py output title.epub srt.parsingTemplate.py --spreadsheet title.epub.xlsx
 
 py3Any2Spreadsheet.py Usage:
-import 'resources\templates\JSON.VNTranslationTools.py' as customParser # But with fancier/messier import syntax.
+import 'resources\templates\epub.epub2_3.parsingTemplate.py' as customParser # But with fancier/messier import syntax.
 customParser.input()
 customParser.output()
 
@@ -47,7 +47,7 @@ Source Code: https://code.launchpad.net/beautifulsoup
 
 License for this file: See main program.
 """
-__version__ = '2024.06.07'
+__version__ = '2024.06.21'
 
 
 # Set program defaults.
@@ -90,17 +90,280 @@ else:
     sys.exit('Unspecified error.'.encode(consoleEncoding))
 
 
-# input() accepts:
-# - 1) An inputFileName
-# - 2) parseSettingsDictionary has whatever settings were defined in thisScript.ini available as a Python dictionary.
-# - 3) The raw character encoding for the inputFileName (utf-8, shift-jis)
-# - 4) An optional characterDictionary.csv as a Python dictionary. The first row is ignored when going from csv->Python.
+"""
+Development Guide:
+input() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+3) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+input() is responsible for returning a completed chocolate.Strawberry() spreadsheet back to py3AnyText2Spreadsheet so it can be written out to disk.
 
-# input() then needs to create a spreadsheet where the first row is column headers. The first column, column A, has the untranslated dialogue, the second column, Column B, has the speaker for each line, and the third column, Column C, has a string containing whatever metadata is appropriate/required to reinsert the strings and verify where they were extracted from.
+output() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) spreadsheet ; The chocolate.Strawberry() that was created using the input() function and specified at the CLI using the --spreadsheet option will be available here.
+3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+4) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+output() is responsible inserting the translated/completed contents in chocolate.Strawberry() spreadsheet back into fileNameWithPath. Once fileNameWithPath has been updated, it should be sent back as a string, a list of strings, or a chocolate.Strawberry() to be written out to disk.
 
-# Usually metadata for Column C is 1) the line numbers the input is taken from, and possibly 2) total number of lines column A, rawText, represents if there was any line merging done like for kirikiri files. If dialogue was taken from more than one line, then the line number is the last line or whatever makes sense.
+The settings {} dictionary has all of the parameters passed at the CLI and a few others. These in particular are useful:
+settings[ 'fileEncoding' ] - The encoding of rawFile as a string.
+settings[ 'parseSettingsDictionary' ] - The parsingTemplate.ini file as a Python dictionary.
+settings[ 'outputColumn' ] - The columnToUseForReplacements from the CLI as a string. If a number was specified, it can be converted back using int( settings[ 'outputColumn' ] ) . If one was not specified, then settings[ 'outputColumnIsDefault' ] == True.
+settings[ 'translatedRawFile' ] - The filename and path of the file to use when writing the translated file as output.
 
-# output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
+Spreadsheet formatting suggestion: https://github.com/gdiaz384/py3TranslateLLM#regarding-the-spreadsheet-formats
+The format is based on the format used by VNT, T++, and common sense.
+Summary:
+Column A should be the extracted rawText.
+Column B should be the speaker (if any). If there is none, then leave this column blank. If possible, use the characterDictionary to translate any raw names into their translated forms as this is more convenient to translate + edit.
+Column C should be any metadata required to validate and reinsert the contents of Column A and B back into the source text.
+As a suggestion for Column C, use the line numbers the input is taken from or the order the input is parsed in, and any other data that is unique to that entry.
+Example lists that represent a row for different types of data:
+[ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
+[ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number
+"""
+
+
+def input( fileNameWithPath, characterDictionary=None, settings={} ):
+
+    if debug == True:
+        print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
+
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
+
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
+
+    # The input file is actually an .srt txt file so read it in as-is without convert it into a list of strings.
+#    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
+#        inputFileContents = myFileHandle.read() #.splitlines()
+
+    print( 'Reading ebook...' )
+
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
+    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8?
+    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
+    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
+    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
+
+    # This returns file names. 9 means 'ITEM_DOCUMENT'
+    #myEbook.get_items_of_type(9)
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
+    fileList=[]
+    for htmlFile in myEbook.get_items_of_type(9):
+        #print( 'type=' + str( type(htmlFile) ) )
+        #print( htmlFile.get_content() )
+        #print( htmlFile.set_content() )
+        #soup.prettify()
+        if htmlFile.is_chapter() == True:
+            #htmlFile <-Object
+            fileList.append( ( htmlFile.id, htmlFile.get_content() ) )
+
+    temporaryList=[]
+    for file in fileList:
+        # This sends ( title, contents )
+        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
+        temporaryList.append( parseXHTML( file[0], file[1] ) )
+
+    #print( temporaryList )
+    #print( str(temporaryList).encode(consoleEncoding) )
+
+    # Create a chocolate.Strawberry().
+    mySpreadsheet=chocolate.Strawberry()
+
+    # Very important: Create the correct header.
+    mySpreadsheet.appendRow( ['rawText', 'speaker', 'metadata' ] )
+
+    # Add data entries and format metadata column appropriately.
+    for fileContents in temporaryList:
+        if len(fileContents) > 0:
+            for entry in fileContents:
+                # list.append([ string, speakerName, fileNameByID_cssSearchExpression_stringSequenceCounter ])
+                mySpreadsheet.appendRow([ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + str( entry[3] ) + metadataDelimiter + str( entry[4] ) ])
+
+    if debug == True:
+        mySpreadsheet.printAllTheThings()
+
+    return mySpreadsheet
+
+
+# This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
+def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
+
+    assert isinstance(mySpreadsheet, chocolate.Strawberry)
+
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
+
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
+
+    #outputColumn=None
+    if ( not 'outputColumn' in settings ):
+        #outputColumn=defaultOutputColumn
+        outputColumn=len( mySpreadsheet.getRow(1) )
+    #elif 'outputColumn' in settings:
+    else:
+        if ( 'outputColumnIsDefault' in settings ):
+            if ( settings[ 'outputColumnIsDefault' ] == True ):
+                # User did not choose it, so disregard default value.
+                settings[ 'outputColumn' ]=None
+
+        if isinstance( settings[ 'outputColumn' ], int ) == True:
+            # This sets outputColumn to an integer like 4.
+            outputColumn = settings[ 'outputColumn' ]
+        elif isinstance( settings[ 'outputColumn' ], str ) == True:
+            if len(settings[ 'outputColumn' ]) == 1:
+                try:
+                    outputColumn = int(settings[ 'outputColumn' ])
+                except:
+                    # Then assume it is already valid as-is.
+                    outputColumn=settings[ 'outputColumn' ]
+            else:
+                # This sets outputColumn to a string like 'A' based upon the search value in settings['outputColumn']. Or if the search string was not found, then the function returns None.
+                outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
+                if outputColumn == None:
+                    #settings[ 'outputColumn' ] = None
+                    # Then the string does not appear in the headers, so revert to using the furthest right value.
+                    try:
+                        outputColumn = int(settings[ 'outputColumn' ])
+                    except:
+                        outputColumn = len( mySpreadsheet.getRow(1) )
+                        print( ('Warning: Could not find column \'' + settings[ 'outputColumn' ] + '\' in spreadsheet. Using furthest right column value \'' + str(outputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
+        # if settings[ 'outputColumn' ] is not an integer or string, then give up and use a default value.
+        else:
+            #outputColumn=defaultOutputColumn
+            outputColumn = len( mySpreadsheet.getRow(1) )
+
+    # Get the untranslated lines, the translated lines, and related metadata.
+    untranslatedLines = mySpreadsheet.getColumn( 'A' )
+    translatedLines = mySpreadsheet.getColumn( outputColumn )
+    speakerList = mySpreadsheet.getColumn( 'B' )
+    metadataColumn = mySpreadsheet.getColumn( 'C' )
+
+    # Remove header.
+    # https://www.w3schools.com/python/ref_list_pop.asp
+    untranslatedLines.pop( 0 )
+    translatedLines.pop( 0 )
+    speakerList.pop( 0 )
+    metadataColumn.pop( 0 )
+
+    # Algorithim:
+    # For every file, gather the entries that need to be reinserted for that file. Put those entries into a temporary list that has:
+    # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
+    # Send that file to be parsed into a function which returns the translated data.
+    # Use epub.EpubItem.set_content() to update the content in the ebook.
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.set_content
+    # Write out the ebook natively.
+    # return None to calling function.
+
+    # To gather, take the existing metadata column and split it into 3 parts:
+    # 1) the file name an entry belongs to
+    # 2) the css search selector
+    # 3) and the enumerate() entry #, a counter, for that css search.
+    #metadataColumnRaw = mySpreadsheet.getColumn( 'C' )
+    metadataFileName=[]
+    metadataSearchTerm=[]
+    metadataEntryNumber=[]
+    for entry in metadataColumn:
+        #https://www.w3schools.com/python/ref_string_split.asp
+        #'p-titlepage_body p_4' => [ 'p-titlepage', 'body p', 4 ]
+        tempList=entry.split( metadataDelimiter )
+        metadataFileName.append( tempList[0] )
+        metadataSearchTerm.append( tempList[1] )
+        metadataEntryNumber.append( int( tempList[2] ) )
+
+    assert( len(metadataColumn) == len(untranslatedLines) == len(metadataEntryNumber) )
+
+    print( 'Reading ebook...' )
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
+    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8? Maybe the encoding is set by the inner .html files or per file.
+    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
+    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
+    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
+
+    # This returns file names. 9 means 'ITEM_DOCUMENT'
+    #myEbook.get_items_of_type(9)
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
+    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
+    fileList=[]
+    for htmlFile in myEbook.get_items_of_type(9):
+        #print( 'type=' + str( type(htmlFile) ) )
+        #print( htmlFile.get_content() )
+        #print( htmlFile.set_content() )
+        #soup.prettify()
+        if htmlFile.is_chapter() == True:
+            #htmlFile <-Object
+            # [ title, html content, updatedContent ]
+            fileList.append( [ htmlFile.id, htmlFile.get_content(), None ] )
+
+    temporaryList=[]
+    # file is itself a list.
+    for file in fileList:
+        # This sends ( title, contents )
+        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
+        #temporaryList.append( parseXHTML( file[0], file[1] ) )
+
+        # Gather entries that match that file.
+        tempParsedList=[]
+        for counter,filenameFromMetadata in enumerate( metadataFileName ):
+            if file[0] == filenameFromMetadata:
+                # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
+                tempParsedList.append( [ untranslatedLines[counter], filenameFromMetadata, metadataSearchTerm[counter], metadataEntryNumber[counter], translatedLines[counter] ] )
+
+        # Send that file to be parsed into a function which returns the translated data.
+        if len(tempParsedList) > 0:
+            # insertIntoXHTML(filename, raw untranslated content, tempParsedList )
+            #returnedXHTML=insertIntoXHTML( filename, inputFileContents, parsedList )
+            translatedFileContents = insertIntoXHTML( file[0], file[1], tempParsedList )
+            #print(translatedFileContents) #This prints the correctly updated/translated XHTML file.
+
+            # Use epub.EpubItem.set_content() to update the content in the ebook.
+            # update the item in the list. Lists are pointers. Does this update the original item or not? # Update: This does not actually update anything. Somewhat expected.
+            #file[1]=translatedFileContents
+            # Otherwise... for file in fileList
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents ) #Update: This zeroes out the contents. Why?
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
+            #epub.EpubItem(uid=,content=t
+            #https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubHtml
+            #ebooklib.epub.EpubHtml
+            #print( type( myEbook.get_item_with_id( file[0] )) ) # <class 'ebooklib.epub.EpubHtml'>
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns the full content.
+            #tempEpubHTMLItem=ebooklib.epub.EpubHtml(file_name=file[0] + '.xhtml' , title=file[0], content=translatedFileContents )
+            #tempEpubHTMLItem=ebooklib.epub.EpubItem(file_name=file[0], title=file[0], content=translatedFileContents )
+            #tempEpubHTMLItem.set_content(translatedFileContents)
+            #myEbook.get_item_with_id( file[0] ).set_content( tempEpubHTMLItem )
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents )
+            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
+            #print( type( myEbook.get_item_with_id( file[0] )) ) <class 'ebooklib.epub.EpubHtml'>
+            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
+
+            # Okay, figured it out. So .set_content() expects a byte encoded string of all things. Weird. Not, a regular python unicode string like would actually make sense, not an epubhtml() or epubitem() class but a string after .encode() has been called on it to convert it into bytes. Some documentation on this would have been nice, but whatever.
+            # utf-8 is probably the only sane encoding to use here, but leave it configurable using file/module-level defaults.
+            myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
+
+    # Write out the ebook natively.
+    tempOutputName = fileNameWithPath + '.translated.epub'
+    ebooklib.epub.write_epub( tempOutputName, myEbook )
+
+    # return None to calling function.
+    return None
+
+    # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
+    #return tempString
 
 
 #This needs to convert '<span class='pie'><ruby>膳<rt>ぜ</rt>所<rt>ぜ</rt></ruby>から</span>' to '膳所から' 
@@ -373,100 +636,6 @@ def parseXHTML( fileName, fileContents ):
         return temporaryList
 
 
-# parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
-# characterDictionary may or may not exist, so set it to None by default.
-def input( fileNameWithPath, characterDictionary=None, settings={} ):
-
-    if debug == True:
-        print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
-
-    # Unpack some variables.
-    if 'fileEncoding' in settings:
-        fileEncoding=settings['fileEncoding']
-    else:
-        fileEncoding=defaultTextEncoding
-
-    if 'parseSettingsDictionary' in settings:
-        parseSettingsDictionary=settings['parseSettingsDictionary']
-    else:
-        parseSettingsDictionary=None
-
-    # The input file is actually an .srt txt file so read it in as-is without convert it into a list of strings.
-#    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
-#        inputFileContents = myFileHandle.read() #.splitlines()
-
-    print( 'Reading ebook...' )
-
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
-    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8?
-    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
-    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
-    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
-
-    # This returns file names. 9 means 'ITEM_DOCUMENT'
-    #myEbook.get_items_of_type(9)
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
-    fileList=[]
-    for htmlFile in myEbook.get_items_of_type(9):
-        #print( 'type=' + str( type(htmlFile) ) )
-        #print( htmlFile.get_content() )
-        #print( htmlFile.set_content() )
-        #soup.prettify()
-        if htmlFile.is_chapter() == True:
-            #htmlFile <-Object
-            fileList.append( ( htmlFile.id, htmlFile.get_content() ) )
-
-    temporaryList=[]
-    for file in fileList:
-        # This sends ( title, contents )
-        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
-        temporaryList.append( parseXHTML( file[0], file[1] ) )
-
-    #print( temporaryList )
-    #print( str(temporaryList).encode(consoleEncoding) )
-
-    # Create a chocolate.Strawberry().
-    mySpreadsheet=chocolate.Strawberry()
-
-    # Very important: Create the correct header.
-    mySpreadsheet.appendRow( ['rawText', 'speaker', 'metadata' ] )
-
-    # Add data entries and format metadata column appropriately.
-    for fileContents in temporaryList:
-        if len(fileContents) > 0:
-            for entry in fileContents:
-                # list.append([ string, speakerName, fileNameByID_cssSearchExpression_stringSequenceCounter ])
-                mySpreadsheet.appendRow([ entry[0], entry[1], str( entry[2] ) + metadataDelimiter + str( entry[3] ) + metadataDelimiter + str( entry[4] ) ])
-
-    if debug == True:
-        mySpreadsheet.printAllTheThings()
-
-    return mySpreadsheet
-
-
-def checkEncoding(string, encoding):
-    try:
-        string.encode(encoding)
-        return True
-    except UnicodeEncodeError:
-        return False
-
-
-def normalizeEncoding(string, encoding):
-    if checkEncoding(string, encoding) == True:
-        return string
-    # Okay, so, something messed up. What was it? Check character by character and klobber the offender.
-    tempString=''
-    for i in range( len(string) ):
-        if checkEncoding( string[ i : i+1 ], encoding) == True:
-            tempString=tempString+string[ i : i+1 ]
-        else:
-            print( ('Warning: ' + string[ i : i+1 ] + ' cannot be encoded to valid ' + encoding + '.' ).encode(consoleEncoding) )
-    print( ('Warning: Output changed from to: \'' + tempString + '\'').encode(consoleEncoding) )
-    return tempString
-
-
 # inferFormatting tries to put back the formatting that is in rawEntry back into translatedString. cssSelector is used for the outermost entry.
 def inferFormatting(rawEntry, cssSelector, translatedString):
     if ( rawEntry.find( '<' ) == -1 ):
@@ -562,178 +731,6 @@ def insertIntoXHTML(filename, fileContents, parsedList ):
     tempList=str(mySoup).partition('<body>')
     return '<html>' + tempList[1] + tempList[2]
 #    return mySoup
-
-
-# This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
-def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
-
-    assert isinstance(mySpreadsheet, chocolate.Strawberry)
-
-    # Unpack some variables.
-    if 'fileEncoding' in settings:
-        fileEncoding=settings['fileEncoding']
-    else:
-        fileEncoding=defaultTextEncoding
-
-    if 'parseSettingsDictionary' in settings:
-        parseSettingsDictionary=settings['parseSettingsDictionary']
-    else:
-        parseSettingsDictionary=None
-
-    #outputColumn=None
-    if ( not 'outputColumn' in settings ):
-        #outputColumn=defaultOutputColumn
-        outputColumn=len( mySpreadsheet.getRow(1) )
-    #elif 'outputColumn' in settings:
-    else:
-        if ( 'outputColumnIsDefault' in settings ):
-            if ( settings[ 'outputColumnIsDefault' ] == True ):
-                # User did not choose it, so disregard default value.
-                settings[ 'outputColumn' ]=None
-
-        if isinstance( settings[ 'outputColumn' ], int ) == True:
-            # This sets outputColumn to an integer like 4.
-            outputColumn = settings[ 'outputColumn' ]
-        elif isinstance( settings[ 'outputColumn' ], str ) == True:
-            if len(settings[ 'outputColumn' ]) == 1:
-                try:
-                    outputColumn = int(settings[ 'outputColumn' ])
-                except:
-                    # Then assume it is already valid as-is.
-                    outputColumn=settings[ 'outputColumn' ]
-            else:
-                # This sets outputColumn to a string like 'A' based upon the search value in settings['outputColumn']. Or if the search string was not found, then the function returns None.
-                outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
-                if outputColumn == None:
-                    #settings[ 'outputColumn' ] = None
-                    # Then the string does not appear in the headers, so revert to using the furthest right value.
-                    try:
-                        outputColumn = int(settings[ 'outputColumn' ])
-                    except:
-                        outputColumn = len( mySpreadsheet.getRow(1) )
-                        print( ('Warning: Could not find column \'' + settings[ 'outputColumn' ] + '\' in spreadsheet. Using furthest right column value \'' + str(outputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
-        # if settings[ 'outputColumn' ] is not an integer or string, then give up and use a default value.
-        else:
-            #outputColumn=defaultOutputColumn
-            outputColumn = len( mySpreadsheet.getRow(1) )
-
-    # Algorithim:
-    # For every file, gather the entries that need to be reinserted for that file. Put those entries into a temporary list that has:
-    # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
-    # Send that file to be parsed into a function which returns the translated data.
-    # Use epub.EpubItem.set_content() to update the content in the ebook.
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.set_content
-    # Write out the ebook natively.
-    # return None to calling function.
-
-    # Get the untranslated lines, the translated lines, and related metadata.
-    untranslatedLines = mySpreadsheet.getColumn( 'A' )
-    translatedLines = mySpreadsheet.getColumn( outputColumn )
-    speakerList = mySpreadsheet.getColumn( 'B' )
-    metadataColumn = mySpreadsheet.getColumn( 'C' )
-
-    # Remove header.
-    # https://www.w3schools.com/python/ref_list_pop.asp
-    untranslatedLines.pop( 0 )
-    translatedLines.pop( 0 )
-    speakerList.pop( 0 )
-    metadataColumn.pop( 0 )
-
-    # To gather, take the existing metadata column and split it into 3 parts:
-    # 1) the file name an entry belongs to
-    # 2) the css search selector
-    # 3) and the enumerate() entry #, a counter, for that css search.
-    #metadataColumnRaw = mySpreadsheet.getColumn( 'C' )
-    metadataFileName=[]
-    metadataSearchTerm=[]
-    metadataEntryNumber=[]
-    for entry in metadataColumn:
-        #https://www.w3schools.com/python/ref_string_split.asp
-        #'p-titlepage_body p_4' => [ 'p-titlepage', 'body p', 4 ]
-        tempList=entry.split( metadataDelimiter )
-        metadataFileName.append( tempList[0] )
-        metadataSearchTerm.append( tempList[1] )
-        metadataEntryNumber.append( int( tempList[2] ) )
-
-    assert( len(metadataColumn) == len(untranslatedLines) == len(metadataEntryNumber) )
-
-    print( 'Reading ebook...' )
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html
-    myEbook = ebooklib.epub.read_epub(fileNameWithPath) # (, encoding=fileEncoding) #No encoding information? Are all ebooks always utf-8? Maybe the encoding is set by the inner .html files or per file.
-    print( ('myEbook.title=' + str(myEbook.title) ).encode(consoleEncoding) )
-    print( ('myEbook.version=' + str(myEbook.version) ).encode(consoleEncoding) )
-    print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
-
-    # This returns file names. 9 means 'ITEM_DOCUMENT'
-    #myEbook.get_items_of_type(9)
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
-    # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
-    fileList=[]
-    for htmlFile in myEbook.get_items_of_type(9):
-        #print( 'type=' + str( type(htmlFile) ) )
-        #print( htmlFile.get_content() )
-        #print( htmlFile.set_content() )
-        #soup.prettify()
-        if htmlFile.is_chapter() == True:
-            #htmlFile <-Object
-            # [ title, html content, updatedContent ]
-            fileList.append( [ htmlFile.id, htmlFile.get_content(), None ] )
-
-    temporaryList=[]
-    # file is itself a list.
-    for file in fileList:
-        # This sends ( title, contents )
-        # And gets back a list that contains [ untranslatedString, speaker=None, fileNameById, css search expression as a string,  the string sequence counter]
-        #temporaryList.append( parseXHTML( file[0], file[1] ) )
-
-        # Gather entries that match that file.
-        tempParsedList=[]
-        for counter,filenameFromMetadata in enumerate( metadataFileName ):
-            if file[0] == filenameFromMetadata:
-                # tempList=[untranslated data, the page title, the css search selector, and the enumerate entry number, translated data ]
-                tempParsedList.append( [ untranslatedLines[counter], filenameFromMetadata, metadataSearchTerm[counter], metadataEntryNumber[counter], translatedLines[counter] ] )
-
-        # Send that file to be parsed into a function which returns the translated data.
-        if len(tempParsedList) > 0:
-            # insertIntoXHTML(filename, raw untranslated content, tempParsedList )
-            #returnedXHTML=insertIntoXHTML( filename, inputFileContents, parsedList )
-            translatedFileContents = insertIntoXHTML( file[0], file[1], tempParsedList )
-            #print(translatedFileContents) #This prints the correctly updated/translated XHTML file.
-
-            # Use epub.EpubItem.set_content() to update the content in the ebook.
-            # update the item in the list. Lists are pointers. Does this update the original item or not? # Update: This does not actually update anything. Somewhat expected.
-            #file[1]=translatedFileContents
-            # Otherwise... for file in fileList
-            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents ) #Update: This zeroes out the contents. Why?
-            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
-            #epub.EpubItem(uid=,content=t
-            #https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubHtml
-            #ebooklib.epub.EpubHtml
-            #print( type( myEbook.get_item_with_id( file[0] )) ) # <class 'ebooklib.epub.EpubHtml'>
-            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns the full content.
-            #tempEpubHTMLItem=ebooklib.epub.EpubHtml(file_name=file[0] + '.xhtml' , title=file[0], content=translatedFileContents )
-            #tempEpubHTMLItem=ebooklib.epub.EpubItem(file_name=file[0], title=file[0], content=translatedFileContents )
-            #tempEpubHTMLItem.set_content(translatedFileContents)
-            #myEbook.get_item_with_id( file[0] ).set_content( tempEpubHTMLItem )
-            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents )
-            #myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
-            #print( type( myEbook.get_item_with_id( file[0] )) ) <class 'ebooklib.epub.EpubHtml'>
-            #print ( myEbook.get_item_with_id( file[0] ).get_content() ) # This returns empty filenames. Why?
-
-            # Okay, figured it out. So .set_content() expects a byte encoded string of all things. Weird. Not, a regular python unicode string like would actually make sense, not an epubhtml() or epubitem() class but a string after .encode() has been called on it to convert it into bytes. Some documentation on this would have been nice, but whatever.
-            # utf-8 is probably the only sane encoding to use here, but leave it configurable using file/module-level defaults.
-            myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
-
-    # Write out the ebook natively.
-    tempOutputName = fileNameWithPath + '.translated.epub'
-    ebooklib.epub.write_epub( tempOutputName, myEbook )
-
-    # return None to calling function.
-    return None
-
-    # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
-    #return tempString
-
 
 
 """

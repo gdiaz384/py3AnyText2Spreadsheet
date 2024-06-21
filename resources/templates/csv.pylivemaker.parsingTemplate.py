@@ -1,20 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-Description: This file parses a livemaker.CSV as input and returns a chocolate.Strawberry(). It also takes a chocolate.Strawberry() and outputs the hopefully translated contents back into the file.
+Description:
+This script parses livemaker.csv, https://pypi.org/project/pylivemaker/ , files returns a spreadsheet.
+It also takes a spreadsheet and outputs the hopefully translated contents back into the file.
+That spreadsheet is implemented as a Strawberry() class found in the chocolate.py library. A chocolate.Strawberry() is a type of spreadsheet that exists only in memory.
 
-# Concept art and description:
-# input() processes raw data and converts it to a spreadsheet for further processing. output() takes data from a processed spreadsheet and inserts it back into the original file. While in memory, that spreadsheet is implemented as a Strawberry() class found in the chocolate.py library.
+API concept art:
+input() processes raw data and converts it to a spreadsheet for further processing.
+output() takes data from a processed spreadsheet and inserts it back into the original file.
 
-Usage: This file is meant to be run as py3Any2Spreadsheet('templates\JSON.VNTranslationTools.py')
+CLI Usage:
+python py3Any2Spreadsheet.py --help
+python py3Any2Spreadsheet.py input livemaker.csv csv.pylivemaker.parsingTemplate.py
+python py3Any2Spreadsheet.py output livemaker.csv csv.pylivemaker.parsingTemplate.py --spreadsheet pylivemaker.csv.extracted.xlsx
 
-Within py3Any2Spreadsheet.py, it can be run as:
-parsingScript='templates\JSON.VNTranslationTools.py'
-# import parsingScript  # But with fancier/messier import syntax.
+py3Any2Spreadsheet.py Usage:
+import 'resources\templates\csv.pylivemaker.parsingTemplate.py' as customParser # But with fancier/messier import syntax.
+customParser.input()
+customParser.output()
+
+Links:
+https://pylivemaker.readthedocs.io/en/latest/
+
+Algorithim:
+Take the 4th column and extract it into data/speaker pairs, or speaker if not available. Skip the header. Reinsert the same way.
 
 License: See main program.
 """
-__version__ = '2024.05.24'
+__version__ = '2024.06.21'
 
 
 # Set program defaults.
@@ -34,8 +48,20 @@ inputErrorHandling='strict'
 
 # import stuff
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
-import resources.chocolate as chocolate     # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
-import json
+
+import resources.chocolate as chocolate            # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
+# To import directly:
+# import sys
+# import pathlib
+# sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
+# import chocolate
+
+import resources.functions as functions              # A helper library that has many functions.
+# To import directly:
+# import sys
+# import pathlib
+# sys.path.append( str( pathlib.Path('C:\\resources\\functions.py').resolve().parent) )
+# import functions
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
 sysVersion=int(sys.version_info[1])
@@ -47,24 +73,56 @@ else:
     sys.exit('Unspecified error.'.encode(consoleEncoding))
 
 
-# input() accepts:
-# - 1) An inputFileName
-# - 2) parseSettingsDictionary has whatever settings were defined in thisScript.ini available as a Python dictionary.
-# - 3) The raw character encoding for the inputFileName (utf-8, shift-jis)
-# - 4) An optional characterDictionary.csv as a Python dictionary. The first row is ignored when going from csv->Python.
+"""
+Development Guide:
+input() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+3) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+input() is responsible for returning a completed chocolate.Strawberry() spreadsheet back to py3AnyText2Spreadsheet so it can be written out to disk.
 
-# input() then needs to create a spreadsheet where the first row is column headers. The first column, column A, has the untranslated dialogue, the second column, Column B, has the speaker for each line, and the third column, Column C, has a string containing whatever metadata is appropriate/required to reinsert the strings and verify where they were extracted from.
+output() is called with the following parameters:
+1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
+2) spreadsheet ; The chocolate.Strawberry() that was created using the input() function and specified at the CLI using the --spreadsheet option will be available here.
+3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+4) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
+output() is responsible inserting the translated/completed contents in chocolate.Strawberry() spreadsheet back into fileNameWithPath. Once fileNameWithPath has been updated, it should be sent back as a string, a list of strings, or a chocolate.Strawberry() to be written out to disk.
 
-# Usually metadata for Column C is 1) the line numbers the input is taken from, and possibly 2) total number of lines column A, rawText, represents if there was any line merging done like for kirikiri files. If dialogue was taken from more than one line, then the line number is the last line or whatever makes sense.
+The settings {} dictionary has all of the parameters passed at the CLI and a few others. These in particular are useful:
+settings[ 'fileEncoding' ] - The encoding of rawFile as a string.
+settings[ 'parseSettingsDictionary' ] - The parsingTemplate.ini file as a Python dictionary.
+settings[ 'outputColumn' ] - The columnToUseForReplacements from the CLI as a string. If a number was specified, it can be converted back using int( settings[ 'outputColumn' ] ) . If one was not specified, then settings[ 'outputColumnIsDefault' ] == True.
+settings[ 'translatedRawFile' ] - The filename and path of the file to use when writing the translated file as output.
 
-# output() accepts a spreadsheet as input, assumes the data has already been translated, and tries to insert the translated text back into the original file.
+Spreadsheet formatting suggestion: https://github.com/gdiaz384/py3TranslateLLM#regarding-the-spreadsheet-formats
+The format is based on the format used by VNT, T++, and common sense.
+Summary:
+Column A should be the extracted rawText.
+Column B should be the speaker (if any). If there is none, then leave this column blank. If possible, use the characterDictionary to translate any raw names into their translated forms as this is more convenient to translate + edit.
+Column C should be any metadata required to validate and reinsert the contents of Column A and B back into the source text.
+As a suggestion for Column C, use the line numbers the input is taken from or the order the input is parsed in, and any other data that is unique to that entry.
+Example lists that represent a row for different types of data:
+[ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
+[ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number
+"""
 
-# parseSettingsDictionary is not necessarily needed for this parsing technique. All settings can be defined within this file or imported from parsingScript.ini
-# characterDictionary may or may not exist, so set it to None by default.
-def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
+
+def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
         print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
+
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
+
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
 
     # The input file is actually a .csv which is a type of spreadsheet already, so do the lazy thing and convert it into a chocolate.Strawberry()
     tempSpreadsheet = chocolate.Strawberry( fileNameWithPath, fileEncoding=fileEncoding, removeWhitespaceForCSV=True )
@@ -117,58 +175,62 @@ def input( fileNameWithPath, parseSettingsDictionary=None, fileEncoding=defaultT
     return mySpreadsheet
 
 
-def checkEncoding(string, encoding):
-    try:
-        string.encode(encoding)
-        return True
-    except UnicodeEncodeError:
-        return False
-
-
-def fixString(string, encoding):
-    if checkEncoding(string, encoding) == True:
-        return string
-    # Okay, so, something messed up. What was it? Check character by character and klobber the offender.
-    tempString=''
-    for i in range( len(string) ):
-        if checkEncoding( string[ i : i+1 ], encoding) == True:
-            tempString=tempString+string[ i : i+1 ]
-        else:
-            print( ('Warning: ' + string[ i : i+1 ] + ' cannot be encoded to valid ' + encoding + '.' ).encode(consoleEncoding) )
-    print( ('Warning: Output changed to: \'' + tempString + '\'').encode(consoleEncoding) )
-    return tempString
-
-
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
 # exportToTextFile
 #def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
 def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
 
+def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
+
     assert isinstance(mySpreadsheet, chocolate.Strawberry)
 
+    # Unpack some variables.
+    if 'fileEncoding' in settings:
+        fileEncoding=settings['fileEncoding']
+    else:
+        fileEncoding=defaultTextEncoding
+
+    if 'parseSettingsDictionary' in settings:
+        parseSettingsDictionary=settings['parseSettingsDictionary']
+    else:
+        parseSettingsDictionary=None
+
     #outputColumn=None
-    if 'outputColumn' in settings:
-        if isinstance( settings[ 'outputColumn' ], int) == True:
+    if ( not 'outputColumn' in settings ):
+        #outputColumn=defaultOutputColumn
+        outputColumn=len( mySpreadsheet.getRow(1) )
+    #elif 'outputColumn' in settings:
+    else:
+        if ( 'outputColumnIsDefault' in settings ):
+            if ( settings[ 'outputColumnIsDefault' ] == True ):
+                # User did not choose it, so disregard default value.
+                settings[ 'outputColumn' ]=None
+
+        if isinstance( settings[ 'outputColumn' ], int ) == True:
             # This sets outputColumn to an integer like 4.
             outputColumn = settings[ 'outputColumn' ]
-        elif isinstance( settings[ 'outputColumn' ], str) == True:
+        elif isinstance( settings[ 'outputColumn' ], str ) == True:
             if len(settings[ 'outputColumn' ]) == 1:
-                # Then assume it is already valid as-is.
-                outputColumn=settings[ 'outputColumn' ]
+                try:
+                    outputColumn = int(settings[ 'outputColumn' ])
+                except:
+                    # Then assume it is already valid as-is.
+                    outputColumn=settings[ 'outputColumn' ]
             else:
-                # This sets outputColumn to a string like 'D' or None if the search string was not found.
+                # This sets outputColumn to a string like 'A' based upon the search value in settings['outputColumn']. Or if the search string was not found, then the function returns None.
                 outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
                 if outputColumn == None:
+                    #settings[ 'outputColumn' ] = None
+                    # Then the string does not appear in the headers, so revert to using the furthest right value.
                     try:
-                        outputColumn=int(settings[ 'outputColumn' ])
+                        outputColumn = int(settings[ 'outputColumn' ])
                     except:
-                        outputColumn=len( mySpreadsheet.getRow(1) )
-                        print( ('Warning: Could not find column \'' + str( settings[ 'outputColumn' ] ) + '\' in spreadsheet. Using furthest right column value \'' + str(defaultOutputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
+                        outputColumn = len( mySpreadsheet.getRow(1) )
+                        print( ('Warning: Could not find column \'' + settings[ 'outputColumn' ] + '\' in spreadsheet. Using furthest right column value \'' + str(outputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
+        # if settings[ 'outputColumn' ] is not an integer or string, then give up and use a default value.
         else:
-            outputColumn=defaultOutputColumn
-    #elif 'outputColumn' not in settings:
-    else:
-        outputColumn=defaultOutputColumn
+            #outputColumn=defaultOutputColumn
+            outputColumn = len( mySpreadsheet.getRow(1) )
 
     # The input file is actually a .csv which is a type of spreadsheet already, so do the lazy thing and convert it into a chocolate.Strawberry()
     tempSpreadsheet = chocolate.Strawberry( fileNameWithPath, fileEncoding=settings['fileEncoding'], removeWhitespaceForCSV=True )
@@ -223,7 +285,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
 
         # Fix a few more one off things.
         # This replaces all non-valid cp932 characters with empty strings. There is a warning printed about this if it happens.
-        tempTranslatedData=fixString(tempTranslatedData, defaultTargetEncoding)
+        tempTranslatedData=functions.normalizeEncoding(tempTranslatedData, defaultTargetEncoding)
 
         # Now that the data has been processed, insert it into the spreadsheet in memory.
         # The correct location is the current row at Column E.
