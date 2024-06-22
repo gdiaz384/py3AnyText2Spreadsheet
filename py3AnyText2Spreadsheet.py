@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-
+Description:
 py3AnyText2Spreadsheet supports Python parsing scripts that can convert various formats, like .epub, .srt, .ass, .ks, .json, and so forth to and from spreadsheet formats, .csv, .xlsx, .xls, .ods. 
 
 Concept art:
@@ -12,8 +12,8 @@ If imported as a library, then it should just act as a proxy for the parsing scr
 import resources.py3AnyText2Spreadsheet
 spreadsheet = resources.py3AnyText2Spreadsheet('resources\py3AnyText2Spreadsheet\resources\ks.kag3.kirikiri.parsingTemplate.py')
 
-# This program should probably support something like: https://github.com/Distributive-Network/PythonMonkey
-# For cross language support of parsing files. Then again, Python is very easy to use.
+For cross language support of parsing files, this program should probably support something like: https://github.com/Distributive-Network/PythonMonkey
+Then again, Python is very easy to use.
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 
@@ -261,6 +261,12 @@ def validateUserInput(userInput):
     if userInput[ 'translatedRawFileEncoding' ] == None:
         userInput[ 'translatedRawFileEncoding' ] = userInput[ 'rawFileEncoding' ]
 
+    # Try to detect line endings from the original file so it can be used for output.
+    # dealWithEncoding.detectLineEndingsFromFile() returns a tuple like ( 'windows', '\r\n' ) or ( 'unix', '\n' ) .
+    detectedLineEndings=dealWithEncoding.detectLineEndingsFromFile( userInput[ 'rawFileName' ], userInput[ 'rawFileEncoding' ] )
+    #print( 'detectedLineEndings=' + detectedLineEndings[0] )
+    userInput[ 'rawFileLineEndings' ] = detectedLineEndings[1]
+
     if debug == True:
         print( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) )
 
@@ -314,10 +320,11 @@ def main(userInput=None):
     parseSettingsDictionary=functions.getParseSettingsDictionary( userInput['parsingProgram'], parseSettingsFile=userInput[ 'parseSettingsFile' ], parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ])
 
     # Just dump everything into a 'settings' dictionary {} so the API does not have to change as often, to present a uniform API over all the parsers, and improve user experience.
-    settings=userInput.copy()
+    settings = userInput.copy()
     settings[ 'fileEncoding' ] = userInput[ 'rawFileEncoding' ]
     settings[ 'parseSettingsDictionary' ] = parseSettingsDictionary
     settings[ 'outputColumn'] = userInput[ 'columnToUseForReplacements' ]
+    settings[ 'rawFileLineEndings' ] = userInput[ 'rawFileLineEndings' ] 
 
     if userInput[ 'mode' ] == 'input':
         # def input( fileNameWithPath, characterDictionary=None, settings={} ):
@@ -356,11 +363,11 @@ def main(userInput=None):
             wroteFile = True
         elif isinstance( translatedTextFile, str ) == True:
             #userInput exists
-            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline=userInput[ 'rawFileLineEndings' ] ) as myFileHandle:
                 myFileHandle.write(translatedTextFile)
             wroteFile = True
         elif isinstance( translatedTextFile, list ) == True:
-            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling ) as myFileHandle:
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline=userInput[ 'rawFileLineEndings' ] ) as myFileHandle:
                 for entry in translatedTextFile:
                     # This might corrupt the output on Linux/Unix or vica-versa on Windows if the software is expecting and requires a specific type of newline \r\n or \n.
                     # By default, Python will translate \n based upon the host OS, not what the software that will actually read the file is expecting because it cannot possibly know that, therefore this is a potential source of corruption.

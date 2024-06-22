@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-The goals of this escapeStuff library are to:
+The goals of this escapeText library are to:
 1) convert 'pie {\i0}pies{\i}, piez'
 to a list:
 [ 'pie ', [ '{\i0}' ], 'pies', [ '{\i}' ], 'piez' ]
 where each entry is either text or notText. All whitespace is preserved.
 2) And help approximate where {\i0} and {\i} should be reinserted into new strings that do not have {\i0} and {\i} already based upon the length of the original string.
 
-To do the above, escapeStuff.EscapeStuff() attempts to determine and internally manage automatic escaping of schema like <>, [], {}, and one off escape sequences.
+To do the above, escapeText.EscapeText() attempts to determine and internally manage automatic escaping of schema like <>, [], {}, and one off escape sequences.
 
 Usage: See below. Like at the bottom.
 
@@ -58,17 +58,16 @@ print( b"\\co\\'lor52".decode('utf-8') ) => \co\'lor52
 Conclusion: Do not worry too much about how the data is displayed. The underlying data is not corrupt. Always use r when creating strings that have escapes in them. The strings might need some coercion to display properly. Creating and displaying strings can be complicated, but once created, a string is a string. It does not become corrupt regardless of how it is displayed. It is what it is.
 
 Copyright (c) 2024 gdiaz384; License: See main program.
-
 """
-__version__='2024.06.20'
+__version__='2024.06.21'
 
 
 # Import stuff.
 import sys
-
+import string
 
 # Set defaults.
-consoleEncoding='utf-8'
+consoleEncoding = 'utf-8'
 defaultGoLeftForSplitMode = False
 defaultSplitDelimiter=' '
 
@@ -83,7 +82,7 @@ defaultEscapeSchema[ '{' ] = '}'
 # In Python, the escapeSequences should always be defined with an r in front, as in r'sequence', to prevent triggering the escapeSequence when creating the string.
 # https://docs.python.org/3/reference/lexical_analysis.html#strings
 pythonEscapeSequences=[
-r'\\',  # Requires special handling.
+r'\\',  # This is actually \\ which means there is no escape sequence for a single \. Should there be? To add a single \ as an escape sequence, create the string without the r as in '\\' but then it is no longer unique and conflicts with all of the other escape sequences.
 r'\'',
 r'\"',
 r'\a',
@@ -93,8 +92,8 @@ r'\n',
 r'\r',
 r'\t',
 r'\v',
-r'\o',
-r'\x',
+r'\o',   # Requires special handling.
+r'\x',   # Requires special handling.
 r'\N',
 r'\u',  # Requires special handling.
 r'\U'   # Requires special handling.
@@ -110,15 +109,21 @@ srtSubtitlesEscapeSequences=[]
 
 userDefinedEscapeSequences=[]
 
+alphabetEscapeSequences=[]
+for i in string.ascii_lowercase:
+    alphabetEscapeSequences.append( '\\' + i )
+for i in string.ascii_uppercase:
+    alphabetEscapeSequences.append( '\\' + i )
 
-class EscapeStuff:
+
+class EscapeText:
     def __init__(self, string, escapeSchema=None, escapeSequences=None):
         self.string=string
-        self.goLeftForSplitMode=defaultGoLeftForSplitMode
-        self.splitDelimiter=defaultSplitDelimiter
+        self.goLeftForSplitMode = defaultGoLeftForSplitMode
+        self.splitDelimiter = defaultSplitDelimiter
 
         if escapeSchema == None:
-            self.escapeSchema=defaultEscapeSchema
+            self.escapeSchema = defaultEscapeSchema
         else:
             # Then the user specified something.
             if isinstance( escapeSchema, (list, tuple) ):
@@ -151,6 +156,8 @@ class EscapeStuff:
                     self.escapeSequences=assSubtitlesEscapeSequences
                 elif escapeSequences == 'srt':
                     self.escapeSequences=srtSubtitlesEscapeSequences
+                elif escapeSequences == 'alphabet':
+                    self.escapeSequences=alphabetEscapeSequences
                 else:
                     print( ('Warning: Invalid escape sequence specified:' + escapeSequences ).encode(consoleEncoding) )
 
@@ -177,6 +184,7 @@ class EscapeStuff:
 #        self.escapeSchema=listOfPairs
 
 
+    # https://docs.python.org/3/howto/descriptor.html
     # https://www.programiz.com/python-programming/property
     # property(fget=None, fset=None, fdel=None, doc=None)
     # Basically, using the @property/property() syntax instead of defining asAList as a static value allows for it to return an updated value whenever the state of the object changes. Library authors also use it to maintain backwards compatibility.
@@ -363,10 +371,10 @@ class EscapeStuff:
 
 
     # This returns a string with all of the escape characters inserted into the string.
-    def getTranslatedStringWithEscapesInserted(self, translatedString):
+    def getTranslatedStringWithEscapesInserted( self, translatedString ):
         tempString=''
 
-        translatedStringAsAList=self.convertTranslatedStringToList(translatedString)
+        translatedStringAsAList=self.convertTranslatedStringToList( translatedString )
         currentTranslatedStringEntry=0
         for entry in self.asAList:
             if isinstance( entry, str ):
@@ -496,14 +504,14 @@ class EscapeStuff:
 
 """
 #Usage:
-#test_escapeStuff.py
+#test_escapeText.py
 
 import sys
 import pathlib
-sys.path.append( str( pathlib.Path('../resources/escapeStuff.py').resolve().parent) )
-import escapeStuff
+sys.path.append( str( pathlib.Path('../resources/escapeText.py').resolve().parent) )
+import escapeText
 
-escapeObject=escapeStuff.EscapeStuff( r'p\zie {\i0}pies{\i}, piez', escapeSequences=[r'\z'])
+escapeObject=escapeText.EscapeText( r'p\zie {\i0}pies{\i}, piez', escapeSequences=[r'\z'])
 print( 'escapeObject.escapeSequences=', escapeObject.escapeSequences )
 print( 'escapeObject.string=', escapeObject.string )
 print( 'escapeObject.asAList=', escapeObject.asAList )

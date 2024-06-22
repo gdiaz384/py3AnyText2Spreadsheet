@@ -58,10 +58,14 @@ inputErrorHandling='strict'
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
 #import os                                                           # Required for srt.compose.
 #import json
-import resources.chocolate as chocolate     # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
-# To import directly, use...
+
+import resources.chocolate as chocolate            # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
+# To import directly:
+# import sys
+# import pathlib
 # sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
 # import chocolate
+
 import pysrt
 #import srt
 #import srt_tools
@@ -81,14 +85,14 @@ else:
 Development Guide:
 input() is called with the following parameters:
 1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
-2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. The first row is always reserved for headers and so is ignored when going from characterDictionary.csv->Python dictionary.
 3) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
 input() is responsible for returning a completed chocolate.Strawberry() spreadsheet back to py3AnyText2Spreadsheet so it can be written out to disk.
 
 output() is called with the following parameters:
 1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
 2) spreadsheet ; The chocolate.Strawberry() that was created using the input() function and specified at the CLI using the --spreadsheet option will be available here.
-3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. The first row is always reserved for headers and so is ignored when going from characterDictionary.csv->Python dictionary.
 4) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
 output() is responsible inserting the translated/completed contents in chocolate.Strawberry() spreadsheet back into fileNameWithPath. Once fileNameWithPath has been updated, it should be sent back as a string, a list of strings, or a chocolate.Strawberry() to be written out to disk.
 
@@ -96,7 +100,7 @@ The settings {} dictionary has all of the parameters passed at the CLI and a few
 settings[ 'fileEncoding' ] - The encoding of rawFile as a string.
 settings[ 'parseSettingsDictionary' ] - The parsingTemplate.ini file as a Python dictionary.
 settings[ 'outputColumn' ] - The columnToUseForReplacements from the CLI as a string. If a number was specified, it can be converted back using int( settings[ 'outputColumn' ] ) . If one was not specified, then settings[ 'outputColumnIsDefault' ] == True.
-settings[ 'translatedRawFile' ] - The filename and path of the file to use when writing the translated file as output.
+settings[ 'translatedRawFileName' ] - The filename and path of the file to use when writing the translated file as output.
 
 Spreadsheet formatting suggestion: https://github.com/gdiaz384/py3TranslateLLM#regarding-the-spreadsheet-formats
 The format is based on the format used by VNT, T++, and common sense.
@@ -108,7 +112,7 @@ As a suggestion for Column C, use the line numbers the input is taken from or th
 Example lists that represent a row for different types of data:
 [ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
 [ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
-[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; .ebook ; Column C is the filename_css search tag_entry number, with _ being used as a delimter.
 """
 
 

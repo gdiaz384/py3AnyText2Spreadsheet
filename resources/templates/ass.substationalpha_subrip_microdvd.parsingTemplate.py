@@ -56,6 +56,7 @@ inputErrorHandling='strict'
 
 # Import stuff.
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
+import pathlib
 # import os
 # import pathlib
 # import json
@@ -67,12 +68,12 @@ import resources.chocolate as chocolate            # Main data structure that wr
 # sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
 # import chocolate
 
-import resources.escapeStuff as escapeStuff     # Handles removing and reinserting tags, [], <>, {}, and one off escape sequences into strings.
+import resources.escapeText as escapeText     # Handles removing and reinserting tags, [], <>, {}, and one off escape sequences into strings.
 # To import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:\\resources\\escapeStuff.py').resolve().parent) )
-# import escapeStuff
+# sys.path.append( str( pathlib.Path('C:\\resources\\escapeText.py').resolve().parent) )
+# import escapeText
 
 import pysubs2
 
@@ -90,14 +91,14 @@ else:
 Development Guide:
 input() is called with the following parameters:
 1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
-2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+2) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. The first row is always reserved for headers and so is ignored when going from characterDictionary.csv->Python dictionary.
 3) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
 input() is responsible for returning a completed chocolate.Strawberry() spreadsheet back to py3AnyText2Spreadsheet so it can be written out to disk.
 
 output() is called with the following parameters:
 1) fileNameWithPath ; This is rawFile as it was passed to py3AnyText2Spreadsheet at the CLI. It still needs to be opened and read into memory.
 2) spreadsheet ; The chocolate.Strawberry() that was created using the input() function and specified at the CLI using the --spreadsheet option will be available here.
-3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. Note that the first row is ignored when going from characterDictionary.csv->Python dictionary.
+3) characterDictionary {} ; This is optional, but if characterDictionary.csv was specified at the CLI, then it will be available here as a Python dictionary. The first row is always reserved for headers and so is ignored when going from characterDictionary.csv->Python dictionary.
 4) settings {} ; This is a dictionary that has all of the settings passed to py3AnyText2Spreadsheet at the command line interface and a few extra values.
 output() is responsible inserting the translated/completed contents in chocolate.Strawberry() spreadsheet back into fileNameWithPath. Once fileNameWithPath has been updated, it should be sent back as a string, a list of strings, or a chocolate.Strawberry() to be written out to disk.
 
@@ -105,7 +106,7 @@ The settings {} dictionary has all of the parameters passed at the CLI and a few
 settings[ 'fileEncoding' ] - The encoding of rawFile as a string.
 settings[ 'parseSettingsDictionary' ] - The parsingTemplate.ini file as a Python dictionary.
 settings[ 'outputColumn' ] - The columnToUseForReplacements from the CLI as a string. If a number was specified, it can be converted back using int( settings[ 'outputColumn' ] ) . If one was not specified, then settings[ 'outputColumnIsDefault' ] == True.
-settings[ 'translatedRawFile' ] - The filename and path of the file to use when writing the translated file as output.
+settings[ 'translatedRawFileName' ] - The filename and path of the file to use when writing the translated file as output.
 
 Spreadsheet formatting suggestion: https://github.com/gdiaz384/py3TranslateLLM#regarding-the-spreadsheet-formats
 The format is based on the format used by VNT, T++, and common sense.
@@ -117,7 +118,7 @@ As a suggestion for Column C, use the line numbers the input is taken from or th
 Example lists that represent a row for different types of data:
 [ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
 [ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
-[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number, with _ being used as a delimter.
 """
 
 
@@ -150,9 +151,9 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
         tempString=line.text.strip()
         if (tempString != '') and ( line.is_comment == False ) and ( line.is_drawing == False ):
             #print(tempString)
-            tempLine=escapeStuff.EscapeStuff( tempString.strip(), escapeSequences=[ r'\N', '\u200a' ] ).text
+            tempLine=escapeText.EscapeText( tempString.strip(), escapeSequences=[ r'\N', '\u200a' ] ).text
             #print(type(tempLine))
-            #escapedString=escapeStuff.EscapeStuff( tempString.strip(), escapeSequences=[ r'\N' ] ).text
+            #escapedString=escapeText.EscapeText( tempString.strip(), escapeSequences=[ r'\N' ] ).text
             #subtitlesList.append( [ tempString.strip(), None, lineNumber ] )
             #validSubtitle=True
             #for item in doesNotStartWith:
@@ -230,8 +231,9 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
                     # Then assume it is already valid as-is.
                     outputColumn=settings[ 'outputColumn' ]
             else:
+                # Then search for the string to see if it is the name of a header.
                 # This sets outputColumn to a string like 'A' based upon the search value in settings['outputColumn']. Or if the search string was not found, then the function returns None.
-                outputColumn=mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
+                outputColumn = mySpreadsheet.searchHeaders( settings[ 'outputColumn' ] )
                 if outputColumn == None:
                     #settings[ 'outputColumn' ] = None
                     # Then the string does not appear in the headers, so revert to using the furthest right value.
@@ -258,108 +260,57 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     speakerList.pop( 0 )
     metadataColumn.pop( 0 )
 
-    # The input file is actually a .txt file so read it in and convert it into a list of strings.
+    # The input file is an .srt txt file. Instead of converting it into a list of strings, use pysubs2.load().
 #    with open( fileNameWithPath, 'rt', encoding=fileEncoding, errors=inputErrorHandling ) as myFileHandle:
 #        inputFileContents = myFileHandle.read().splitlines()
-    #subtitleFile = pysrt.open(fileNameWithPath, encoding=fileEncoding)
+    subtitles = pysubs2.load( fileNameWithPath, encoding=fileEncoding, errors=inputErrorHandling )
 
+    currentSpreadsheetRow = 0
+    nextTranslatedLine = int( metadataColumn[ currentSpreadsheetRow ] )
+    for subtitleCounter,line in enumerate( subtitles ):
+        # if every entry from the spreadsheet has been processed and the only entries left are ones without translations, then stop processing the file.
+        if subtitleCounter > nextTranslatedLine:
+            break
 
+        if subtitleCounter < nextTranslatedLine:
+            continue
 
+        tempLine = escapeText.EscapeText( line.text.strip(), escapeSequences=[ r'\N', '\u200a' ] )
+        assert( untranslatedLines[ currentSpreadsheetRow ] == tempLine.text )
 
+        escapedTranslatedLine = tempLine.getTranslatedStringWithEscapesInserted( translatedLines[currentSpreadsheetRow].strip() )
 
+        if ( debug == True ) and ( nextTranslatedLine == 3477 ):
+            print( 'nextTranslatedLine=', nextTranslatedLine )
+            print( 'line.text=', line.text )
+            print( 'tempLine.text=', tempLine.text )
+            print( 'translatedline=', translatedLines[currentSpreadsheetRow] )
+            print( 'escapedTranslatedLine=', escapedTranslatedLine )
 
+        if translatedLines[currentSpreadsheetRow].strip() != tempLine.text:
+            line.text=escapedTranslatedLine
 
+        print( line.text )
 
+        currentSpreadsheetRow += 1
+        if currentSpreadsheetRow > len(translatedLines) -1:
+            break
+        nextTranslatedLine = int( metadataColumn[ currentSpreadsheetRow ] )
 
+        # Debug code.
+        #if subtitleCounter > 100:
+        #    sys.exit(0)
 
+    if translatedRawFileName in settings:
+        outputFileName=settings['translatedRawFileName']
+    else:
+        outputFileName=fileNameWithPath + '.translated' + pathlib.Path(fileToTranslateFileName).suffix
 
-
-
-
-
-
-
-
-
-
-
-
-    sys.exit(1)
-
-    # Spreadsheets start with row 1 but row 1 contains headers. Therefore, row 2 is the first row with valid data. However, the 'correct' row number has all the data put into a series lists for processing. Lists begin their indexes at 0, so decrement 1 in order to get the correct 2nd item in the spreadsheet.
-    currentRow=2 - 1
-    nextTranslatedLine=None
-    #metadataFromSpreadsheet=None
-    #hasEmptyLineAtTheStartOfTheSecondPart=False
-
-    # the srt entries start at 1, but currentSubtitleCounter starts at 0, therefore, currentSubtitleCounter+1 ==  srt entry # in spreadsheet. The value for srt entry number in spreadsheet can be obtained from metadataColumn.partition(metadataDelimiter)[0]
-    for currentSubtitleCounter,currentSubtitleObjectRaw in enumerate(subtitleFile):
-        # TODO: Put more assertions everywhere to spot errors easier.
-        currentSpeaker=speakerList[ currentRow ]
-        currentSRTEntryNumberTakenFromSpreadsheet=int( metadataColumn[currentRow].partition( metadataDelimiter )[0] )
-        currentLineHasFormatting=metadataColumn[currentRow].partition( metadataDelimiter )[2]
-        if currentLineHasFormatting.lower() == 'true':
-            currentLineHasFormatting=True
-        else:
-            currentLineHasFormatting=False
-
-        # if there is no speaker for the current row, then set the currentTranslatedLine and move on to formatting.
-        if currentSpeaker==None:
-            numberOfEntriesTotalForCurrentSRTEntry=1
-            currentTranslatedLine=translatedLines[currentRow].strip()
-
-        #elif there is a speaker in the currentRow, then lines need to be merged. They were split for translation, but now they need '- ' prepended before each line and \n between each line (but not at the end).
-        else:
-            #tempString = '- ' + translatedLines[currentRow].strip() + '\n'
-            # Get the data for the next entry and the entry after that until the next line is reached. Next line being reached means would call an index > len( metadataColumn ) value for that cell (or that cell is None?).
-            # Once it no longer matches, that row -1 is the total range of data to pull.
-            # srt does not support speakers, so just ignore the data in the speaker column, but merge the lines from the range using - and \n.
-            tempSearchRange = currentRow
-            counter=0
-            while True:
-                tempSearchRange += 1
-                # Special failure case.
-                if tempSearchRange > len( metadataColumn ):
-                    break
-                tempSRTNumber=int( metadataColumn[ tempSearchRange ].partition(metadataDelimiter)[0] )
-                if tempSRTNumber > currentSRTEntryNumberTakenFromSpreadsheet:
-                    break
-                counter+=1
-                if counter > 10:
-                    print('Unspecified error.')
-                    sys.exit(1)
-            numberOfEntriesTotalForCurrentSRTEntry = tempSearchRange - currentRow
-            #print( 'numberOfEntriesTotalForCurrentSRTEntry=', numberOfEntriesTotalForCurrentSRTEntry )
-            tempString=''
-            for i in range( numberOfEntriesTotalForCurrentSRTEntry ):
-                tempString = tempString + '- ' + translatedLines[ currentRow + i ].strip() + '\n'
-            # This removes the last trailing \n.
-            currentTranslatedLine=tempString.strip()
-
-        # Apply word wrapping.
-        #TODO: Put stuff here.
-        # formattedLine=applyWordWrap(currentTranslatedLine)
-
-        # Then check if there was any formatting in the original line.
-        currentTranslatedLine=inferFormatting(currentSubtitleObjectRaw.text, currentTranslatedLine)
-
-        #output as-is.
-        currentSubtitleObjectRaw.text=currentTranslatedLine
-
-        # Go to next line.
-        currentRow=currentRow + numberOfEntriesTotalForCurrentSRTEntry
-
-    # Once the srt object is fully updated, send it back to the calling function so it can be written out to disk.
-    tempString=''
-    # at the very end, go through each object in the subtitleFile and ask it to convert itself to a string.
-    for currentSubtitleObjectRaw in subtitleFile:
-        # Then take each string and stitch them all together (without appending \n).
-        # Well, not appending new lines did not work, so just append them now.
-        tempString=tempString + str(currentSubtitleObjectRaw).strip() + '\n' + '\n'
-    # Once stitched together, call strip() to remove excessive new lines before the string and \n\n after.
-    # Append exactly 1 new line at the end for posix reasons, and then return that string to be written out as a plain text file.
-    tempString=tempString.strip()+'\n'
+    # Write out the subtitles natively.
+    subtitles.save(outputFileName, encoding=fileEncoding)
 
     # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
-    return tempString
+    # Since the file was saved already, just return none.
+    return None
+    #return tempString
 

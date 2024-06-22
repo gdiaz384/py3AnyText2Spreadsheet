@@ -6,7 +6,6 @@ Description: A helper/wrapper library to aid in using openpyxl as a data structu
 Usage: See below. Like at the bottom.
 
 Copyright (c) 2024 gdiaz384; License: See main program.
-
 """
 __version__='2024.06.06'
 
@@ -552,7 +551,7 @@ class Strawberry:
             self.printAllTheThings()
 
 
-    def exportToCSV(self, fileNameWithPath, fileEncoding=defaultTextFileEncoding,csvDialect=None):
+    def exportToCSV( self, fileNameWithPath, fileEncoding=defaultTextFileEncoding, csvDialect=None ):
         with open(fileNameWithPath, 'w', newline='', encoding=fileEncoding, errors=outputErrorHandling) as myOutputFileHandle:
             # if csvDialect != None.:
                 # implement code related to csvDialects here. Default options are unix, excel and excel-tab
