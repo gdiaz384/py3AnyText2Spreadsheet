@@ -489,7 +489,7 @@ class Strawberry:
                         return
                     # This does not handle new lines correctly if there is a new line in tempString.
                     myFileHandle.write(tempString + '\n')
-        print( ('Wrote: '+fileNameWithPath).encode(consoleEncoding) )
+        print( ( 'Wrote: ' + fileNameWithPath ).encode(consoleEncoding) )
 
 
     #TODO:
@@ -642,11 +642,11 @@ class Strawberry:
             self.lastEntry = 1
         # If this fails, then it should check a variable that if set tries to deduplicate the cache.
         try:
-            assert( len(self.index)+1 == len(self.getColumn('A')) )
+            assert( len( self.index) + 1 == len( self.getColumn('A') ) )
         except:
-            print('len(self.index)+1=',len(self.index) )
-            print('len(self.getColumn(A))=',len(self.getColumn('A')))
-            print( 'Error: Spreadsheet has duplicate items. Cannot use as cache.\nTip: Use cache.rebuildCache() to remove the duplicate items before trying to initializeCache(). Adding new entries while duplicates exist will corrupt the cache.')
+            print( 'len( self.index ) + 1=', len( self.index ) )
+            print( 'len( self.getColumn(A) )=', len( self.getColumn('A') ) )
+            print( 'Error: Spreadsheet has duplicate items. Cannot use as cache.\nTip: Use cache.rebuildCache() to remove the duplicate items before trying to initializeCache(). Adding new entries while duplicates exist will corrupt the cache.' )
             raise
 
     # Expects a string and searches through the current cache index. Python dictionaries have an O(1) search time, they are hash tables, compared to O(n) search time on Python lists especially when the last list item is being searched for immediately after an append() opperation. Compared to O(n), O(1) is crazy levels of fast, although even O(log n) would have been an improvement.

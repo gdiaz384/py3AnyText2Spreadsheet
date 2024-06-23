@@ -41,10 +41,11 @@ usageHelp='\n Usage: python py3AnyText2Spreadsheet --help'
 
 
 # Import stuff. These must be here or the library will crash even if these modules have already been imported by main program.
+import sys                                   # End program on fail condition.
 import os, os.path                      # Extract extension from filename, and test if file exists.
 import pathlib                            # For pathlib.Path Override file in file system with another and create subfolders. Sane path handling.
-import requests                          # Check if internet exists.
-import sys                                   # End program on fail condition.
+#import requests                          # Check if internet exists. # Update: Changed to socket library instead, so this is not needed anymore.
+import socket
 #import io                                      # Manipulate files (open/read/write/close).
 import datetime                          # Used to get current date and time.
 import csv                                    # Read and write to csv files. Example: Read in 'resources/languageCodes.csv'
@@ -126,11 +127,11 @@ def checkIfThisFolderExists(myFolder):
 
 
 # This function builds a Python dictionary from a text file and then returns it to the caller.
-# The idea is to reads program settings from text files using a predetermined list of rules.
+# The idea is to read program settings from text files using a predetermined list of rules.
 # The text file uses the syntax: setting=value, # are comments, empty/whitespace lines ignored.
 def getDictionaryFromTextFile(fileNameWithPath, fileNameEncoding, consoleEncoding=consoleEncoding, errorHandlingType=inputErrorHandling,debug=debug):
     if fileNameWithPath == None:
-        print( ('Cannot read settings from None entry: '+fileNameWithPath ).encode(consoleEncoding) )
+        print( ('Warning: Cannot read settings from None entry: ' + str(fileNameWithPath) ).encode(consoleEncoding) )
         return None
 
     #check if file exists   'scratchpad/ks_testFiles/A01.ks'
@@ -302,12 +303,12 @@ def getDateAndTimeFull():
 #    print(currentDateAndTimeFull.encode(consoleEncoding))
 
 
-# Returns true if internet is available. Returns false otherwise.
+# Returns True if internet is available. Returns false otherwise.
 def checkIfInternetIsAvailable():
     try:
-        myRequest = requests.get('https://www.google.com',timeout=10)
+        myRequest = socket.getaddrinfo('lumen.com',443)
         return True
-    except requests.ConnectionError:
+    except:
         return False
 
 

@@ -358,8 +358,12 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
             myEbook.get_item_with_id( file[0] ).set_content( translatedFileContents.encode( defaultTargetEncoding ) )
 
     # Write out the ebook natively.
-    tempOutputName = fileNameWithPath + '.translated.epub'
-    ebooklib.epub.write_epub( tempOutputName, myEbook )
+    if 'translatedRawFileName' in settings:
+        outputFileName=settings['translatedRawFileName']
+    else:
+        outputFileName=fileNameWithPath + '.translated' + pathlib.Path(fileToTranslateFileName).suffix
+    ebooklib.epub.write_epub( outputFileName, myEbook )
+    print( ( 'Wrote: ' + outputFileName ).encode(consoleEncoding) )
 
     # return None to calling function.
     return None

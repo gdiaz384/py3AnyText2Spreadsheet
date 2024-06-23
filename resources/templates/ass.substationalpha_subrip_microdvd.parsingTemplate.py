@@ -290,7 +290,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
         if translatedLines[currentSpreadsheetRow].strip() != tempLine.text:
             line.text=escapedTranslatedLine
 
-        print( line.text )
+        #print( line.text )
 
         currentSpreadsheetRow += 1
         if currentSpreadsheetRow > len(translatedLines) -1:
@@ -301,13 +301,14 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
         #if subtitleCounter > 100:
         #    sys.exit(0)
 
-    if translatedRawFileName in settings:
+    if 'translatedRawFileName' in settings:
         outputFileName=settings['translatedRawFileName']
     else:
         outputFileName=fileNameWithPath + '.translated' + pathlib.Path(fileToTranslateFileName).suffix
 
     # Write out the subtitles natively.
-    subtitles.save(outputFileName, encoding=fileEncoding)
+    subtitles.save( outputFileName, encoding=fileEncoding )
+    print( ( 'Wrote: ' + outputFileName ).encode(consoleEncoding) )
 
     # The code that calls this function will check if the return type is a chocolate.Strawberry(), a string, or a list and handle writing out the file appropriately, so there is no need to do anything more here.
     # Since the file was saved already, just return none.
