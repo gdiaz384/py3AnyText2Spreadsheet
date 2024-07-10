@@ -10,14 +10,14 @@ Copyright (c) 2024 gdiaz384; License: See main program.
 __version__='2024.06.06'
 
 #set defaults
-#printStuff=True
-verbose=False
-debug=False
-#debug=True
-consoleEncoding='utf-8'
-defaultTextFileEncoding='utf-8'   # Settings that should not be left as a default setting should have default prepended to them.
-inputErrorHandling='strict'
-#outputErrorHandling='namereplace'  #This is set dynamically below.
+#printStuff = True
+verbose = False
+debug = False
+#debug = True
+consoleEncoding = 'utf-8'
+defaultTextFileEncoding = 'utf-8'   # Settings that should not be left as a default setting should have default prepended to them.
+inputErrorHandling = 'strict'
+#outputErrorHandling = 'namereplace'  #This is set dynamically below.
 
 #These must be here or the library will crash even if these modules have already been imported by main program.
 import os.path                            # Extract extension from filename, and test if file exists.
@@ -28,28 +28,26 @@ import openpyxl                          # Used as the core internal data struct
 import csv                                   # Read and write to csv files. Example: Read in 'resources/languageCodes.csv'
 try:
     import xlrd                              #Provides reading from Microsoft Excel Document (.xls).
-    xlrdLibraryIsAvailable=True
+    xlrdLibraryIsAvailable = True
 except:
-    xlrdLibraryIsAvailable=False
+    xlrdLibraryIsAvailable = False
 try:
     import xlwt                              #Provides writing to Microsoft Excel Document (.xls).
-    xlwtLibraryIsAvailable=True
+    xlwtLibraryIsAvailable = True
 except:
-    xlwtLibraryIsAvailable=False
+    xlwtLibraryIsAvailable = False
 try:
     import odfpy                           #Provides interoperability for Open Document Spreadsheet (.ods). Alternatives: https://github.com/renoyuan/easyofd pyexcel-ods3, pyexcel-ods, ezodf
-    odfpyLibraryIsAvailable=True
+    odfpyLibraryIsAvailable = True
 except:
-    odfpyLibraryIsAvailable=False
+    odfpyLibraryIsAvailable = False
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
-else:
-    sys.exit('Unspecified error.'.encode(consoleEncoding))
+    outputErrorHandling = 'backslashreplace'
 
 
 #wrapper class for spreadsheet data structure

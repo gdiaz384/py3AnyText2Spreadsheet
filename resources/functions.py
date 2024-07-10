@@ -19,7 +19,7 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__='2024.06.21'
+__version__='2024.07.05'
 
 
 # Set defaults.
@@ -30,14 +30,14 @@ debug=False
 consoleEncoding='utf-8'
 defaultTextFileEncoding='utf-8'   # Settings that should not be left as a default setting should have default prepended to them.
 
-linesThatBeginWithThisAreComments='#'
-assignmentOperatorInSettingsFile='='
-inputErrorHandling='strict'
-#outputErrorHandling='namereplace'  # This gets set dynamically below.
+linesThatBeginWithThisAreComments = '#'
+assignmentOperatorInSettingsFile = '='
+inputErrorHandling = 'strict'
+#outputErrorHandling = 'namereplace'  # This gets set dynamically below.
 
-parseSettingsExtension='.ini'
+parseSettingsExtension = '.ini'
 
-usageHelp='\n Usage: python py3AnyText2Spreadsheet --help'
+usageHelp = '\n Usage: python py3AnyText2Spreadsheet --help'
 
 
 # Import stuff. These must be here or the library will crash even if these modules have already been imported by main program.
@@ -52,23 +52,21 @@ import csv                                    # Read and write to csv files. Exa
 import openpyxl                          # Used as the core internal data structure and to read/write xlsx files. Must be installed using pip.
 try:
     import odfpy                           #Provides interoperability for Open Document Spreadsheet (.ods).
-    odfpyLibraryIsAvailable=True
+    odfpyLibraryIsAvailable = True
 except:
-    odfpyLibraryIsAvailable=False
+    odfpyLibraryIsAvailable = False
 try:
     import xlrd                              #Provides reading from Microsoft Excel Document (.xls).
-    xlrdLibraryIsAvailable=True
+    xlrdLibraryIsAvailable = True
 except:
-    xlrdLibraryIsAvailable=False
+    xlrdLibraryIsAvailable = False
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
-else:
-    sys.exit( 'Unspecified error.'.encode(consoleEncoding) )
+    outputErrorHandling = 'backslashreplace'    
 
 
 def checkEncoding(string, encoding):
@@ -312,19 +310,17 @@ def checkIfInternetIsAvailable():
         return False
 
 
-def importDictionaryFromFile( myFile, encoding=None ):
+def importDictionaryFromFile( myFile, encoding=defaultTextFileEncoding ):
     if checkIfThisFileExists(myFile) != True:
         return None
     #else it exists, so find the extension and call the appropriate import function for that fileType
     myFileNameOnly, myFileExtensionOnly = os.path.splitext(myFile)
-    if myFileExtensionOnly == None:
-        return None
-    if myFileExtensionOnly == '':
+    if ( myFileExtensionOnly == None ) or ( myFileExtensionOnly == '' ):
         return None
     elif myFileExtensionOnly == '.csv':
         return importDictionaryFromCSV( myFile, encoding, ignoreWhitespace=False)
     elif myFileExtensionOnly == '.xlsx':
-        return importDictionaryFromXLSX( myFile,encoding )
+        return importDictionaryFromXLSX( myFile, encoding )
     elif myFileExtensionOnly == '.xls':
         return importDictionaryFromXLS( myFile, encoding )
     elif myFileExtensionOnly == '.ods':
@@ -334,35 +330,35 @@ def importDictionaryFromFile( myFile, encoding=None ):
         return None
 
 
-#Even if importing to dictionary from .csv/.xlsx/.xls/.ods to a dictionary instead of an openpyxl data structure, the rule is that the first entry is headers, so the first key=value entry must be skipped regardless.
-def importDictionaryFromCSV( myFile, myFileEncoding, ignoreWhitespace=False ):
+# Even if importing to a Python dictionary from .csv .xlsx .xls .ods .tsv, the rule is that the first entry for spreadsheets is headers, so the first key=value entry must be skipped regardless.
+def importDictionaryFromCSV( myFile, myFileEncoding=defaultTextFileEncoding, ignoreWhitespace=False ):
     tempDict={}
 
-    #'with' is correct. Do not use 'while'.
+    # 'with' is correct. Do not use 'while'.
     with open(myFile, 'rt', newline='', encoding=myFileEncoding, errors=inputErrorHandling) as myFileHandle:
-        csvReader = csv.reader(myFileHandle)
-        currentLine=0
-        for line in csvReader:
-            #skip first line
+        csvReader = csv.reader( myFileHandle )
+        for currentLine,line in enumerate( csvReader ):
+            # Skip first line.
             if currentLine == 0:
-                currentLine+=1
+                pass
             elif currentLine != 0:
                 if ignoreWhitespace == True:
-                    for i in range(len(line)):
-                        line[i]=line[i].strip()
+                    for i in range( len(line) ):
+                        line[i] = line[i].strip()
                 if line[1] == '':
+                    line[1] = None
+                elif line[1].lower() == 'none':
                     line[1] = None
                 elif line[1].lower() == 'true':
                     line[1] = True
                 elif line[1].lower() == 'false':
                     line[1] = False
-                tempDict[line[0]]=line[1]
-
-    # if the contents of item are '' or 'none', then change to None
-    for key,item in tempDict.items():
-        if item != None:
-            if ( item == '' ) or ( item.lower() == 'none' ):
-                tempDict[key]=None
+                else:
+                    try:
+                        line[1] = int( line[1] )
+                    except:
+                        pass
+                tempDict[ line[0] ] = line[1]
 
     return tempDict
 

@@ -30,13 +30,13 @@ __version__ = '2024.06.21'
 
 
 # Set program defaults.
-verbose=False
-debug=False
-consoleEncoding='utf-8'
-defaultTextEncoding='utf-8'
-metadataDelimiter='_'
-inputErrorHandling='strict'
-#outputErrorHandling='namereplace'  #This is set dynamically below.
+verbose = False
+debug = False
+consoleEncoding = 'utf-8'
+defaultTextEncoding = 'utf-8'
+metadataDelimiter = '_'
+inputErrorHandling = 'strict'
+#outputErrorHandling = 'namereplace'  #This is set dynamically below.
 
 
 # import stuff
@@ -45,14 +45,11 @@ import resources.chocolate as chocolate     # Main data structure that wraps ope
 
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
-else:
-    sys.exit('Unspecified error.'.encode(consoleEncoding))
-
+    outputErrorHandling = 'backslashreplace'    
 
 """
 Development Guide:

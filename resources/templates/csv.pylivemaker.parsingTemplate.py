@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """
 Description:
-This script parses livemaker.csv, https://pypi.org/project/pylivemaker/ , files returns a spreadsheet.
+This script parses livemaker.csv, https://pypi.org/project/pylivemaker/ , files and returns a spreadsheet.
 It also takes a spreadsheet and outputs the hopefully translated contents back into the file.
 That spreadsheet is implemented as a Strawberry() class found in the chocolate.py library. A chocolate.Strawberry() is a type of spreadsheet that exists only in memory.
 
@@ -32,45 +32,43 @@ __version__ = '2024.06.21'
 
 
 # Set program defaults.
-verbose=False
-debug=False
-consoleEncoding='utf-8'
-defaultTextEncoding='utf-8'
-defaultOutputColumn=4
-metadataDelimiter='_'
-defaultTargetEncoding='cp932'
+verbose = False
+debug = False
+consoleEncoding = 'utf-8'
+defaultTextEncoding = 'utf-8'
+defaultOutputColumn = 4
+metadataDelimiter = '_'
+defaultTargetEncoding = 'cp932'
 
 #https://docs.python.org/3.7/library/codecs.html#standard-encodings
-inputErrorHandling='strict'
-#inputErrorHandling='backslashreplace'
-#outputErrorHandling='namereplace'  #This is set dynamically below.
+inputErrorHandling = 'strict'
+#inputErrorHandling = 'backslashreplace'
+#outputErrorHandling = 'namereplace'  #This is set dynamically below.
 
 
-# import stuff
+# import stuff.
 import sys                                                         # Used to sys.exit() in case of an error and to check system version.
 
 import resources.chocolate as chocolate            # Main data structure that wraps openpyxl. This import will fail if not using the syntax in Usage.
 # To import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
+# sys.path.append( str( pathlib.Path( 'C:/resources/chocolate.py' ).resolve().parent ) )
 # import chocolate
 
 import resources.functions as functions              # A helper library that has many functions.
 # To import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:\\resources\\functions.py').resolve().parent) )
+# sys.path.append( str( pathlib.Path( 'C:\\resources\\functions.py' ).resolve().parent ) )
 # import functions
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
-else:
-    sys.exit('Unspecified error.'.encode(consoleEncoding))
+    outputErrorHandling = 'backslashreplace'    
 
 
 """

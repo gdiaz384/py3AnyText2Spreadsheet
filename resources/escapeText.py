@@ -72,7 +72,7 @@ defaultGoLeftForSplitMode = False
 defaultSplitDelimiter=' '
 
 #escapeSchema specify a pair of opening and closing tags that denote a seperate meaning from the literal text in computer code. Examples are <> [] and {}. Use a dictionary instead of a list to more strongly associate each pair.
-defaultEscapeSchema={}
+defaultEscapeSchema = {}
 defaultEscapeSchema[ '<' ] = '>'
 defaultEscapeSchema[ '[' ] = ']'
 defaultEscapeSchema[ '{' ] = '}'
@@ -81,7 +81,7 @@ defaultEscapeSchema[ '{' ] = '}'
 # escapeSequences that are always inside of escapeSchema should not be included here.
 # In Python, the escapeSequences should always be defined with an r in front, as in r'sequence', to prevent triggering the escapeSequence when creating the string.
 # https://docs.python.org/3/reference/lexical_analysis.html#strings
-pythonEscapeSequences=[
+pythonEscapeSequences = [
 r'\\',  # This is actually \\ which means there is no escape sequence for a single \. Should there be? To add a single \ as an escape sequence, create the string without the r as in '\\' but then it is no longer unique and conflicts with all of the other escape sequences.
 r'\'',
 r'\"',
@@ -101,15 +101,15 @@ r'\U'   # Requires special handling.
 
 # http://www.tcax.org/docs/ass-specs.htm
 # TODO: This part.
-assSubtitlesEscapeSequences=[]
+assSubtitlesEscapeSequences = []
 
 # https://docs.fileformat.com/video/srt/
 # TODO: This part.
-srtSubtitlesEscapeSequences=[]
+srtSubtitlesEscapeSequences = []
 
-userDefinedEscapeSequences=[]
+userDefinedEscapeSequences = []
 
-alphabetEscapeSequences=[]
+alphabetEscapeSequences = []
 for i in string.ascii_lowercase:
     alphabetEscapeSequences.append( '\\' + i )
 for i in string.ascii_uppercase:

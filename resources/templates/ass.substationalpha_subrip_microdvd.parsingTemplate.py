@@ -41,17 +41,17 @@ __version__ = '2024.06.21'
 
 
 # Set program defaults.
-verbose=False
-debug=False
-consoleEncoding='utf-8'
-defaultTextEncoding='utf-8'
-defaultOutputColumn=4
-metadataDelimiter='_'
+verbose = False
+debug = False
+consoleEncoding = 'utf-8'
+defaultTextEncoding = 'utf-8'
+defaultOutputColumn = 4
+metadataDelimiter = '_'
 
 #https://docs.python.org/3.7/library/codecs.html#standard-encodings
-inputErrorHandling='strict'
-#inputErrorHandling='backslashreplace'
-#outputErrorHandling='namereplace'  #This is set dynamically below.
+inputErrorHandling = 'strict'
+#inputErrorHandling = 'backslashreplace'
+#outputErrorHandling = 'namereplace'  #This is set dynamically below.
 
 
 # Import stuff.
@@ -65,26 +65,24 @@ import resources.chocolate as chocolate            # Main data structure that wr
 # To import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:/resources/chocolate.py').resolve().parent) )
+# sys.path.append( str( pathlib.Path( 'C:/resources/chocolate.py' ).resolve().parent ) )
 # import chocolate
 
 import resources.escapeText as escapeText     # Handles removing and reinserting tags, [], <>, {}, and one off escape sequences into strings.
 # To import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:\\resources\\escapeText.py').resolve().parent) )
+# sys.path.append( str( pathlib.Path( 'C:\\resources\\escapeText.py' ).resolve().parent ) )
 # import escapeText
 
 import pysubs2
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'
-else:
-    sys.exit('Unspecified error.'.encode(consoleEncoding))
+    outputErrorHandling = 'backslashreplace'
 
 
 """
@@ -200,25 +198,25 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
 
     # Unpack some variables.
     if 'fileEncoding' in settings:
-        fileEncoding=settings['fileEncoding']
+        fileEncoding = settings[ 'fileEncoding' ]
     else:
-        fileEncoding=defaultTextEncoding
+        fileEncoding = defaultTextEncoding
 
     if 'parseSettingsDictionary' in settings:
-        parseSettingsDictionary=settings['parseSettingsDictionary']
+        parseSettingsDictionary = settings[ 'parseSettingsDictionary' ]
     else:
-        parseSettingsDictionary=None
+        parseSettingsDictionary = None
 
-    #outputColumn=None
+    #outputColumn = None
     if ( not 'outputColumn' in settings ):
-        #outputColumn=defaultOutputColumn
-        outputColumn=len( mySpreadsheet.getRow(1) )
+        #outputColumn = defaultOutputColumn
+        outputColumn = len( mySpreadsheet.getRow(1) )
     #elif 'outputColumn' in settings:
     else:
         if ( 'outputColumnIsDefault' in settings ):
             if ( settings[ 'outputColumnIsDefault' ] == True ):
                 # User did not choose it, so disregard default value.
-                settings[ 'outputColumn' ]=None
+                settings[ 'outputColumn' ] = None
 
         if isinstance( settings[ 'outputColumn' ], int ) == True:
             # This sets outputColumn to an integer like 4.
@@ -226,7 +224,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
         elif isinstance( settings[ 'outputColumn' ], str ) == True:
             if len(settings[ 'outputColumn' ]) == 1:
                 try:
-                    outputColumn = int(settings[ 'outputColumn' ])
+                    outputColumn = int( settings[ 'outputColumn' ] )
                 except:
                     # Then assume it is already valid as-is.
                     outputColumn=settings[ 'outputColumn' ]
@@ -244,7 +242,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
                         print( ('Warning: Could not find column \'' + settings[ 'outputColumn' ] + '\' in spreadsheet. Using furthest right column value \'' + str(outputColumn) + ':'+ str( mySpreadsheet.getColumn(outputColumn)[0] ) + '\'' ).encode(consoleEncoding) )
         # if settings[ 'outputColumn' ] is not an integer or string, then give up and use a default value.
         else:
-            #outputColumn=defaultOutputColumn
+            #outputColumn = defaultOutputColumn
             outputColumn = len( mySpreadsheet.getRow(1) )
 
     # Get the untranslated lines, the translated lines, and related metadata.

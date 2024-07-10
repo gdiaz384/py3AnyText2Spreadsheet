@@ -42,19 +42,19 @@ import os.path                                   # Test if file exists.
 import sys                                         # End program on fail condition.
 try:
     import chardet                              # Detect character encoding from files using heuristics.
-    chardetLibraryAvailable=True
+    chardetLibraryAvailable = True
 except:
-    chardetLibraryAvailable=False
+    chardetLibraryAvailable = False
 try:
     import charamel                            # Detect character encoding from files using machine learning heuristics.
-    charamelLibraryAvailable=True
+    charamelLibraryAvailable = True
 except:
-    charamelLibraryAvailable=False
+    charamelLibraryAvailable = False
 try:
     import charset_normalizer              # Try to figure out which character encoding correctly decodes the text.
-    charsetNormalizerLibraryAvailable=True
+    charsetNormalizerLibraryAvailable = True
 except:
-    charsetNormalizerLibraryAvailable=False
+    charsetNormalizerLibraryAvailable = False
 
 
 #Returns a string containing the encoding to use, relied on detectEncoding(filename) but code was merged down.

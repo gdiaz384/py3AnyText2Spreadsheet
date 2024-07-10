@@ -22,24 +22,24 @@ __version__='2024.06.21 alpha'
 
 
 # Set defaults.
-verbose=False
-debug=False
+verbose = False
+debug = False
 
-consoleEncoding='utf-8'
-defaultTextFileEncoding='utf-8'                     # Settings that should not be left as a default setting should have default prepended to them.
-defaultTextEncodingForKSFiles='shift-jis'   # UCS2 BOM LE (aka UTF-16 LE) might also work. Need to test.
+consoleEncoding = 'utf-8'
+defaultTextFileEncoding = 'utf-8'                     # Settings that should not be left as a default setting should have default prepended to them.
+defaultTextEncodingForKSFiles = 'shift-jis'   # UCS2 BOM LE (aka UTF-16 LE) might also work. Need to test.
 # shift-jis is a text encoding. In terms of ANSI code pages, it maps to cp932.
  
-supportedSpreadsheetExtensions=[ '.csv' , '.xlsx' , '.xls' , '.ods' ]
-defaultSpreadsheetExtension='.xlsx'
-defaultOutputColumn=4
-tempParseScriptPathAndName='scratchpad/temp.py'   # Do not change this. This is associated with a hardcoded import statement pointing to scratchpad\temp.py It is not possible to make tempParseScriptPathAndName dynamic without importing an additional library which is more complicated to manage than just hardcoding this.
+supportedSpreadsheetExtensions = [ '.csv' , '.xlsx' , '.xls' , '.ods' ]
+defaultSpreadsheetExtension = '.xlsx'
+defaultOutputColumn = 4
+tempParseScriptPathAndName = 'scratchpad/temp.py'   # Do not change this. This is associated with a hardcoded import statement pointing to scratchpad\temp.py It is not possible to make tempParseScriptPathAndName dynamic without importing an additional library which is more complicated to manage than just hardcoding this.
 
-inputErrorHandling='strict'
-#outputErrorHandling='namereplace'        #This is set dynamically below.
+inputErrorHandling = 'strict'
+#outputErrorHandling = 'namereplace'        #This is set dynamically below.
 
-unspecifiedError='Unspecified error in py3AnyText2Spreadsheet.py.'
-usageHelp=' Usage: python py3AnyText2Spreadsheet.py --help  Example: py3AnyText2Spreadsheet input myInputFile.ks parsingProgram.py --rawFileEncoding shift-jis'
+unspecifiedError = 'Unspecified error in py3AnyText2Spreadsheet.py.'
+usageHelp = ' Usage: python py3AnyText2Spreadsheet.py --help  Example: py3AnyText2Spreadsheet input myInputFile.ks parsingProgram.py --rawFileEncoding shift-jis'
 
 
 # import stuff.
@@ -56,13 +56,11 @@ import resources.dealWithEncoding as dealWithEncoding # Handles text encoding an
 import resources.functions as functions               # Has a lot of helper functions not directly related to this program's core logic.
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion=int(sys.version_info[1])
+sysVersion = sys.version_info.minor
 if sysVersion >= 5:
-    outputErrorHandling='namereplace'
+    outputErrorHandling = 'namereplace'
 elif sysVersion < 5:
-    outputErrorHandling='backslashreplace'    
-else:
-    sys.exit( unspecifiedError.encode(consoleEncoding) )
+    outputErrorHandling = 'backslashreplace'    
 
 
 def createCommandLineOptions():
@@ -273,16 +271,16 @@ def validateUserInput(userInput):
     return userInput
 
 
-def main(userInput=None):
+def main( userInput=None ):
 
-    if not isinstance(userInput, dict):
+    if not isinstance( userInput, dict ):
         # Define command line options.
         # userInput is a dictionary.
         userInput = createCommandLineOptions()
         # Verify input.
         userInput = validateUserInput( userInput ) # This should also read in all of the input files into dictionaries except for the parseScript.py.
 
-    if debug==True:
+    if debug == True:
         print( ( 'userInput=' + str(userInput) ).encode(consoleEncoding) )
 
     # Import algorithm: Create scratchpad directory, copy target script to scratchpad directory, import as: import scratchpad.temp as customParser
@@ -331,8 +329,8 @@ def main(userInput=None):
         mySpreadsheet=customParser.input( userInput['rawFileName'], characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
  
         if mySpreadsheet == None:
-            print('Empty file.')
-            sys.exit(1)
+            print( 'Empty file.' )
+            sys.exit( 1 )
         else:
             assert( isinstance( mySpreadsheet, chocolate.Strawberry )  )
 
@@ -346,7 +344,7 @@ def main(userInput=None):
 
     elif userInput[ 'mode' ] == 'output':
 
-        mySpreadsheet=chocolate.Strawberry(myFileName=userInput[ 'spreadsheetFileName'], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], removeWhitespaceForCSV=True, csvDialect=None)
+        mySpreadsheet=chocolate.Strawberry( myFileName=userInput[ 'spreadsheetFileName'], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], removeWhitespaceForCSV=True, csvDialect=None)
 
         #def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ): # mySpreadsheet is a chocolate Strawberry.
         translatedTextFile=customParser.output( userInput['rawFileName'], mySpreadsheet=mySpreadsheet, characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
