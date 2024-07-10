@@ -174,10 +174,6 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
 
 # This function takes mySpreadsheet as a chocolate.Strawberry() and inserts the contents back to fileNameWithPath.
-# exportToTextFile
-#def output(fileNameWithPath, mySpreadsheet, parseSettingsDictionary=None, fileEncoding=defaultTextEncoding, characterDictionary=None):
-def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
-
 def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ):
 
     assert isinstance(mySpreadsheet, chocolate.Strawberry)

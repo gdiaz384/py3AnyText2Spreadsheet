@@ -96,7 +96,7 @@ def createCommandLineOptions():
 
     if commandLineArguments.version == True:
         print( __version__.encode(consoleEncoding) )
-        sys.exit(0)
+        sys.exit( 0 )
 
     userInput={}
     userInput[ 'mode' ] = commandLineArguments.mode

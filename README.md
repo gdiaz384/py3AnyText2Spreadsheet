@@ -2,43 +2,48 @@
 
 py3AnyText2Spreadsheet parses arbitrary files to create spreadsheets. The intent is to use use the spreadsheets to assist in the translation of natural language.
 
-The intended use case is part of a larger workflow that involves [py3TranslateLLM](//github.com/gdiaz384/py3TranslateLLM) to translate the spreadsheets with different engines and possibly [py3translationServer](//github.com/gdiaz384/py3translationServer) to power one or more of those engines. Once translation completes, py3AnyText2Spreadsheet can then be used to reinsert the translated entries back into the original files.
+The intended use case is part of a larger workflow that involves [py3TranslateLLM](//github.com/gdiaz384/py3TranslateLLM), [py3translationServer](//github.com/gdiaz384/py3translationServer), or other translation software to translate the spreadsheet. Once translation completes, py3AnyText2Spreadsheet can then be used to reinsert the translated entries back into the original files.
 
 The project goals are to:
-- Support fully automated extraction from text files into spreadsheets *after* the correct parser is written.
-- Make it easier to write parsers by handling most or all of the backend logic and providing engine templates and documentation.
+- Extract strings to translate from various texual formats and insert them back after translation by using spreadsheets as the interchange format.
+- Support fully automated extraction/insertion from text files into/from spreadsheets *after* the correct parser is written.
+- Make it easier to write parsers by handling most or all of the backend logic and providing [templates] and documentation.
 - Support a wide variety of different parsers, including non-Python ones like Javascript/ECMAScript, for various textual formats.
 - Support parsers for non-encrypted texts part of obscure game engines and other obscure file formats.
-- Extract strings to translate from various texual formats and insert them back after translation by using spreadsheets as the interchange format.
-- Currently semi-supported:
-    - Support for JSON produced by [VNTranslationTools](//github.com/arcusmaximus/VNTranslationTools).
-    - KAG3 used in the kirikiri game engine (.ks).
-    - pylivemaker CSV files.
-    - Support for arbitrary text files, including JSON, via user defined parse files.
+
+Currently semi-supported:
+- eBooks (.ebook).
+- Subtitles (.srt, .ssa, .ass).
+- [VNTranslationTools](//github.com/arcusmaximus/VNTranslationTools)'s json (.json).
+- KAG3 used in the kirikiri game engine (.ks).
+- pylivemaker's csv files (.csv).
+    - Related engines: livemaker2 and livemaker3.
+- Extracted texts from [DDWSystemTool](github.com/crskycode/DDWSystemTool) (.txt).
+    - Engine aliases: [DDSystem](//vndb.org/r?f=fwDDSystem-), DDWSystem2013, DDWorks Game System.
+- Arbitrary text files via user defined parse files.
 
 ## Support is planned for:
 
 - Better documentation.
 - Line-by-line text files (.txt).
-- srt files.
-- epub files.
-- DDWSystem2013, DDWorks Game System, fwDDSystem, [vndb.org](https://vndb.org/r?f=fwDDSystem-)
-- MOre JSON support:
-    - Support for JSON where all entries and are nested under `contents` and there is no additional nesting.
+- More json support:
+    - Support for json where all entries and are nested under `contents` and there is no additional nesting.
         - Multiple entries must be in a list surrounded by square brackets `[ ]`.
-    - To process additional types of JSON, open an issue and provide an `example.json`.
-- KAG3 used in TyranoBuilder (.ks/.ts?).
+    - To process additional types of json, open an issue and provide an `example.json`.
+- KAG3 used in TyranoBuilder (.ks/.ts?) and kirikiriz.
 - RPGM (MZ, MV, Ace, XP... ) # The dream.
 
 ## Maybe:
 
-- Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to JSON.
-    - Is it possible to support .psb natively by importing the FreeMote library or do the files have to be converted to JSON at a CLI first?
+- Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to json.
+    - Is it possible to support .psb by importing the FreeMote library or do the files have to be converted to json at a CLI first?
+- [Open an issue] to request a format be added.
 
 ## Usage Guide:
 
-A lot of boilerplate code is required to write any software including simple file parsers. One goal of py3AnyText2Spreadsheet is to seperarate that repetitive boilerplate logic from the core logic of writing a parser. To write a new parser, all that should be required is to define the input() and output() functions.
-Another goal is that, as long as there are a lot of very customizable templates provided for many different types of files, copying one and adjusting it to suit the particulars of the dataset should be simpiler and provide more functionality in the end than writing it from scratch every time. That should lower the bar for writing parsers unique to a specific dataset.
+- A lot of boilerplate code is required to write any software including simple file parsers.
+- One goal of py3AnyText2Spreadsheet is to seperarate that repetitive boilerplate logic from the core logic of writing a parser. To write a new parser, all that should be required is to define the input() and output() functions.
+- Another goal is that, as long as there are a lot of [customizable templates] provided for many different types of files, copying one and adjusting it to suit the particulars of the dataset should be simpiler and provide more functionality in the end than writing it from scratch every time. That should lower the bar for writing parsers unique to a particular dataset.
 
 1. Identify the type of file that needs parsing. Usually this is indicated by the file extension (.srt, .epub, .txt, .docx).
 2. See if there is a provided template under py3AnyText2Spreadsheet/resources/templates and copy it. Rename it by changing the 'parsingTemplate' part to suit the desired dataset. If there are no templates available for that file type, then [Open an Issue] with the requested file type and, ideally, a data sample.
@@ -99,7 +104,7 @@ Alpha means the software is undergoing radical changes and core features are sti
 
 - Since Python is especially very easy to work with, it is used as the default language.
 - In accordance with the project goals, parser readability and portability within an engine is a major concern but parsing speed is not.
-- The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided.
+- The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided and is easy to extend.
 - The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program py3TranslateLLM.
 
 ### Concept Art:
@@ -110,16 +115,16 @@ Alpha means the software is undergoing radical changes and core features are sti
 
 ### Developer notes:
 
-- The parsingScript is copied to scratchpad\temp.py and importing scratchpad\temp.py is hardcoded because the parsingScript must be imported as a python module to be executed if it is going to be executed within the context of the main script. This makes sense because:
+- The parsingScript is copied to scratchpad\temp.py and importing scratchpad\temp.py is hardcoded because the parsingScript must be imported as a python module to be executed if it is going to be executed within the context of the main script. This approach makes sense because:
     1. It makes it possible import without worrying about source path.
-    1. There are reduced conflicts in name since there are many unsupported.
-    1. The importlib library to handle special import handling is no longer necessary at the cost of needing the shutil library to copy the file in a high-level way.
+    1. There are reduced conflicts in name since there are many unsupported characters like - and . which are valid file names but not valid when importing modules.
+    1. This makes the importlib library that can handle special import handling no longer necessary at the cost of needing the shutil library to copy the file in a high-level way.
     1. `scratchpad` is marked as a temporary directory in git, so it will not interfere with updating the program using git.
 
 ### Regarding settings files:
 
 - These are optional script.ini files. Instead of defining a lot of settings directly in the input(), output() functions, settings defined in the script.ini will be made available as a Python dictionary.
-- The idea is that these script.ini files may be less intimidating to edit for non-programmers and potentially allow the same script to adjust its behavior for different contents without directly updating them.
+- The idea is that these script.ini files may be less intimidating to edit for non-programmers and potentially allow the same script to adjust its behavior for different contents without directly updating the .py file directly.
 - Examples of settings files for the parsing templates can be found under `resources/templates/`.
 - The text formats used for templates and settings (.ini .txt) have their own syntax:
     - `#` indicates that line is a comment.
@@ -155,8 +160,12 @@ TODO: This section.
 - After reading the above wiki entry, the rest of this section should make more sense.
 - For compatability reasons, data gets converted to binary strings for stdout which can result in the console sometimes showing utf-8 hexadecimal (hex) encoded unicode characters, like `\xe3\x82\xaf\xe3\x83\xad\xe3\x82\xa8`, especially with `debug` enabled. To convert them back to non-ascii chararacters, like `クロエ`, dump them into a hex to unicode converter.
     - Example: [www.coderstool.com/unicode-text-converter](//www.coderstool.com/unicode-text-converter)
-    - If the local console supports utf-8, then the following also works:
-        - TODO: Put stuff here. print( '\x3...    '.decode('utf-8') )
+    - Example: If the local console or Python IDE supports utf-8, then it can also be displayed properly after decoding the string in Python:
+        - Start a command prompt or terminal.
+        - `python`
+        - `string=b'\xe3\x82\xaf\xe3\x83\xad\xe3\x82\xa8'`
+        - `string.decode('utf-8')`
+        - ctrl + z
 - Some character encodings cannot be converted to other encodings. When such errors occur, use the following error handling options:
     - [docs.python.org/3.7/library/codecs.html#error-handlers](//docs.python.org/3.7/library/codecs.html#error-handlers), and [More Examples](//www.w3schools.com/python/ref_string_encode.asp) -> Run example.
     - The default error handler for input files is `strict` which means 'crash the program if the encoding specified does not match the file perfectly'.
@@ -166,31 +175,39 @@ TODO: This section.
         - Makes it easy to do ctrl+f replacements to fix any problems.
             - Tip: Use `postWritingToFileDictionary` or [py3stringReplace](//github.com/gdiaz384/py3stringReplace) to automate these ctrl+f replacements.
     - If there are more than one or two such conversion errors per file, then the chosen file encoding settings are probably incorrect.
-- If the `chardet` library is available, it will be used to try to detect the character encoding of files via heuristics. While this imperfect solution is obviously very error prone, it is still better to have it than not.
-    - To make it available: `pip install chardet`
-    - If it is not available, then everything is assumed to be `utf-8` unless otherwise specified.
+- If the [chardet](//pypi.org/project/chardet), [charamel](//pypi.org/project/charamel), or [charset-normalizer](//pypi.org/project/charset-normalizer) libraries are available, they will be used to try to detect the character encoding of files via heuristics. While heuristics are an imperfect solution and obviously very error prone, it is still better than nothing.
+    - To make the above libraries available, install at least one using `pip`:
+        - `pip install chardet`
+        - `pip install charamel`
+        - `pip install charset-normalizer`
+    - Priority is: chardet > charamel > charset-normalizer.
+    - If none of the above are available, then everything is assumed to be `utf-8` unless otherwise specified.
+    - Note that support for `charamel` and `charset-normalizer` has not actually been implemented yet (2024-07-09).
 
 ## Regarding Python Library Dependencies:
 
-- py3AnyText2Spreadsheet was developed on Python 3.7.6.
+- py3AnyText2Spreadsheet was developed on Python 3.7.
 - It is not necessarily clear what versions work with what other versions, in part due to the shenanigans of some developers creating deliberate incompatibilities, so just install whatever and hope it works.
+- py3AnyText2Spreadsheet and the libraries below also use libraries from the Python standard library. For an enumeration of those, check the source code.
 
-Library name | Required, Reccomended, or Optional | Description | Install command | Version used to develop py3AnyText2Spreadsheet
+Library name | Required, Recommended, or Optional | Description | Install command | Version used to develop py3AnyText2Spreadsheet
 --- | --- | --- | --- | ---
 [openpyxl](//pypi.python.org/pypi/openpyxl) | Required. | Used for main data structure and Microsoft Excel Document (.xlsx) support. | `pip install openpyxl` | 3.1.2
-chocolate | Required. | Has various functions to manage using openpyxl as a data structure. | Included with py3AnyText2Spreadsheet. | Unversioned.
-dealWithEncoding | Required. | Handles text codecs and implements `chardet`. | Included with py3AnyText2Spreadsheet. | 0.1 2024Jan21.
-[chardet](//pypi.org/project/chardet) | Reccomended. | Improves text codec handling. | `pip install chardet` | 5.2.0
+chocolate.py | Required. | Has various functions to manage using openpyxl as a data structure. | Included with py3AnyText2Spreadsheet. | See [source].
+dealWithEncoding | Required. | Handles text codecs and implements `chardet`. | Included with py3AnyText2Spreadsheet. | See [source].
+escapeText.py | Recommended. | deals with extracting and inserting escape schema `( )`, `[ ]`, `{ }` and escape sequences `\\`. | Included with py3AnyText2Spreadsheet. | See [source].
+[chardet](//pypi.org/project/chardet) | Recommended. | Improves text codec handling. | `pip install chardet` | 5.2.0
+[charamel](//pypi.org/project/charamel) | Recommended. | Detects text codecs. | `pip install charamel` | 1.0.0
+[charset-normalizer](//pypi.org/project/charset-normalizer) | Recommended. | Detects text codecs. | `pip install charset-normalizer` | 3.3.2
 [xlrd](//pypi.org/project/xlrd/) | Optional. | Provides reading from Microsoft Excel Document (.xls). | `pip install xlrd` | 2.0.1
 [xlwt](//pypi.org/project/xlwt/) | Optional. | Provides writing to Microsoft Excel Document (.xls). | `pip install xlwt` | 1.3.0
 [odfpy](//pypi.org/project/odfpy) | Optional. | Provides interoperability for Open Document Spreadsheet (.ods). | `pip install odfpy` | 1.4.1
 
 Libraries can also require other libraries.
-- odfpy requires: `defusedxml`.
-- py3AnyText2Spreadsheet and the libraries above also use libraries from the Python standard library. For an enumeration of those, check the source code.
+- chocolate, which implements openpyxl for use as a data structure, also implements `xlrd`, `xlwd`, `odfpy`.
 - openpyxl - The latest version of openpyxl requires Python [3.6? 3.7?]
-- chocolate which implements openpyxl for use as a data structure. It also uses the other libraries that handle various types of spreadsheets.
-- chardet The latest version of chardet requires Python 3.7+.
+- odfpy requires: `defusedxml`.
+- chardet - The latest version of chardet requires Python 3.7+.
 - Python 3.4+ Standard library. TODO: Test this. 
 
 ## Licenses:
@@ -200,6 +217,8 @@ Libraries can also require other libraries.
     - For the source code, open the Python installation directory on the local system `Python310\libs\site-packages\`.
 - [openpyxl](//pypi.python.org/pypi/openpyxl)'s [license](//foss.heptapod.net/openpyxl/openpyxl/-/blob/3.1.2/LICENCE.rst) and [source code](//foss.heptapod.net/openpyxl/openpyxl).
 - [chardet](//pypi.org/project/chardet)'s license is [LGPL v2+](//github.com/chardet/chardet/blob/main/LICENSE). [Source code](//github.com/chardet/chardet).
+- [charamel](//pypi.org/project/charamel)'s [license] and [source code].
+- [charset-normalizer](//pypi.org/project/charset-normalizer)'s [license] and [source code].
 - [odfpy](//pypi.org/project/odfpy)'s, license is [GPL v2](//github.com/eea/odfpy/blob/master/GPL-LICENSE-2.txt). [Source code](//github.com/eea/odfpy).
 - [xlrd](//pypi.org/project/xlrd)'s [license](//github.com/python-excel/xlrd/blob/master/LICENSE) and [source code](//github.com/python-excel/xlrd).
 - [xlwt](//pypi.org/project/xlwt/)'s [license](//github.com/python-excel/xlwt/blob/master/LICENSE) and [source code](//github.com/python-excel).
