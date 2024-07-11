@@ -257,36 +257,40 @@ class EscapeText:
     # Next, for each entry in the list that is a string process each string for escape sequences and split the entry in the list accordingly.
     # Same algorithim as above. Try to find the first escape sequence that occurs in the string, and split based upon that. Until more escape sequences remain in the string, continue.
     # return the list
+    # Bug: There is this bug where if multiple escape schema are in one line, then only the first one detected will be removed. # Update fixed. Problem was not clearing  currentLowestIndex = [ None, None ]  on every iteration of the loop.
+    # New bug: Sometimes, but not always, an empty string gets appended when going from print(tempList) \n assert( schemaFoundCounter == 0 ) -> end of escapeSequences processing code when a text entry consists solely of an escapeSequence.
     def convertStringToList( self, string ):
         schemaFoundCounter=0
         for key,value in self.escapeSchema.items():
             if ( string.find( key ) != -1 ) and ( string.find( value ) != -1 ):
-                schemaFoundCounter=schemaFoundCounter + string.count( key )
+                schemaFoundCounter = schemaFoundCounter + string.count( key )
 
         #print( 'schemaFoundCounter=' + str(schemaFoundCounter) )
-        schemaFoundCounterBackup=schemaFoundCounter
+        schemaFoundCounterBackup = schemaFoundCounter
         tempList=[]
         if schemaFoundCounter == 0:
             tempList.append( string )
         #else:
         tempString=string
-        # [index, first pair in self.escapeSchema]
-        currentLowestIndex=[ None, None ]
         for i in range( schemaFoundCounter ):
+            # [index, first pair in self.escapeSchema]
+            currentLowestIndex = [ None, None ]
             for key,value in self.escapeSchema.items():
-                if tempString.find( key ) != -1: # This should be redundant because the loop should only iterate over the string as many times as key, the first part of a schama like {, appears in the string. Update: No. It is always needed. Not clear why though.
+                if tempString.find( key ) != -1: # This should be redundant because the loop should only iterate over the string as many times as key, the first part of a schema like {, appears in the string. Update: No. It is always needed. Not clear why though. Update: Maybe because there are different schema in different parts of the string and the remainder of the string will not necessarily have every schema? Without this, tempString.find( key ) == -1 if it is not found which is < currentLowestIndex[0] and hence would corrupt the index.
                     if currentLowestIndex[0] == None:
-                        currentLowestIndex=[ tempString.find( key ), key ]
-                    elif currentLowestIndex[0] > tempString.find( key ):
-                        currentLowestIndex=[ tempString.find( key ), key ]
-            index = tempString.find( currentLowestIndex[1] )
+                        currentLowestIndex = [ tempString.find( key ), key ]
+                    # if the next key has a lower index than the current one
+                    elif tempString.find( key ) < currentLowestIndex[0]:
+                        currentLowestIndex = [ tempString.find( key ), key ]
+            #index = tempString.find( currentLowestIndex[1] )
+            index = currentLowestIndex[0]
             if index != 0:
                 preString = tempString.partition( currentLowestIndex[1] )[0]
                 tempList.append( preString ) # Append text as a string.
                 tempString = currentLowestIndex[1] + tempString.partition( currentLowestIndex[1] )[2]
             # index is now 0.
             endIndex = tempString.find( self.escapeSchema[ currentLowestIndex[1] ] )
-            tempList.append([ tempString[ 0 : endIndex + 1 ] ]) # Append the schema itself as a tuple. The trailing , is a special syntax that is required to create a tuple that has only one item. #Update: Changed to a list to make this less confusing.
+            tempList.append([ tempString[ 0 : endIndex + 1 ] ]) # Append the schema as a list to differentiate it from the unescaped text which are added as strings.
             tempString = tempString.partition( self.escapeSchema[ currentLowestIndex[1] ])[2]
             #print( tempString )
             schemaFoundCounter -= 1
@@ -296,6 +300,11 @@ class EscapeText:
         #print(tempList)
         assert( schemaFoundCounter == 0 )
 
+        #for key,value in self.escapeSchema.items():
+        #    if ( string.find( key ) != -1 ) and ( string.find( value ) != -1 ):
+        #        schemaFoundCounter=schemaFoundCounter + string.count( key )
+        #assert( schemaFoundCounter == 0 )
+
         if len( self.escapeSequences ) == 0:
             return tempList
 
@@ -304,7 +313,7 @@ class EscapeText:
 
         for entry in tempList:
             if isinstance( entry, str ):
-                tempList2=[]
+                tempList2 = []
                 escapeSequenceFoundCounter = 0
                 tempString = entry
 
@@ -374,11 +383,11 @@ class EscapeText:
     def getTranslatedStringWithEscapesInserted( self, translatedString ):
         tempString=''
 
-        translatedStringAsAList=self.convertTranslatedStringToList( translatedString )
-        currentTranslatedStringEntry=0
+        translatedStringAsAList = self.convertTranslatedStringToList( translatedString )
+        currentTranslatedStringEntry = 0
         for entry in self.asAList:
             if isinstance( entry, str ):
-                tempString=tempString + translatedStringAsAList[ currentTranslatedStringEntry ]
+                tempString = tempString + translatedStringAsAList[ currentTranslatedStringEntry ]
                 currentTranslatedStringEntry+=1
             #elif isinstance( entry, list ):
             else:
@@ -400,22 +409,23 @@ class EscapeText:
     # otherwise if not last part,
     # As parts are extracted, add the parts to the list.
     # if the last character in the string is not a blank space ' ', then adjust the index left or right based upon goLeftForSplitMode boolean.
+    # TODO: There should be special handling for escape schema and sequences that appear at the start and end of the string to boost insertion accuracy in these cases.
     def convertTranslatedStringToList(self, translatedString):
         originalStringInAList=[]
         for i in self.asAList:
             if isinstance( i, str ):
                 originalStringInAList.append( i )
-        #print(originalStringInAList)
-        numberOfPartsToSplit=len(originalStringInAList)
-        #print(numberOfPartsToSplit)
-        tempString=''
+        #print( originalStringInAList )
+        numberOfPartsToSplit = len( originalStringInAList )
+        #print( numberOfPartsToSplit )
+        tempString = ''
         for i in originalStringInAList:
-            tempString=tempString+i
+            tempString = tempString + i
         originalStringLength=len( tempString )
 
-        translatedStringAfterBeingSplit=[]
+        translatedStringAfterBeingSplit = []
 
-        # The point of this code block is to convert translated strings into the same number of blocks they
+        # The point of this code block is to convert translated strings into the same number of blocks as the untranslated string.
         if numberOfPartsToSplit <= 1:
             translatedStringAfterBeingSplit.append( translatedString )
         elif numberOfPartsToSplit > 1:

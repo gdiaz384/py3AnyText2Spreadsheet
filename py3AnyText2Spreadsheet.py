@@ -27,10 +27,10 @@ debug = False
 
 consoleEncoding = 'utf-8'
 defaultTextFileEncoding = 'utf-8'                     # Settings that should not be left as a default setting should have default prepended to them.
-defaultTextEncodingForKSFiles = 'shift-jis'   # UCS2 BOM LE (aka UTF-16 LE) might also work. Need to test.
+defaultTextEncodingForKSFiles = 'shift-jis'      # UCS2 BOM LE (aka UTF-16 LE) might also work. Need to test.
 # shift-jis is a text encoding. In terms of ANSI code pages, it maps to cp932.
  
-supportedSpreadsheetExtensions = [ '.csv' , '.xlsx' , '.xls' , '.ods' ]
+supportedSpreadsheetExtensions = [ '.csv' , '.xlsx' , '.xls' , '.ods', '.tsv' ]
 defaultSpreadsheetExtension = '.xlsx'
 defaultOutputColumn = 4
 tempParseScriptPathAndName = 'scratchpad/temp.py'   # Do not change this. This is associated with a hardcoded import statement pointing to scratchpad\temp.py It is not possible to make tempParseScriptPathAndName dynamic without importing an additional library which is more complicated to manage than just hardcoding this.

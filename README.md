@@ -12,12 +12,13 @@ The project goals are to:
 - Support parsers for non-encrypted texts part of obscure game engines and other obscure file formats.
 
 Currently semi-supported:
-- eBooks (.ebook).
-- Subtitles (.srt, .ssa, .ass).
+- eBook2 and eBook3 (.epub).
+- Subtitles: SubRip (.srt), SubstationAlpha (.ssa), Advanced SubstationAlpha (.ass), MicroDVD, MPL2, TMP, WebVTT.
+- OpenAI's Whisper captions.
 - [VNTranslationTools](//github.com/arcusmaximus/VNTranslationTools)'s json (.json).
 - KAG3 used in the kirikiri game engine (.ks).
-- pylivemaker's csv files (.csv).
-    - Related engines: livemaker2 and livemaker3.
+- pylivemaker's exported csv files (.csv).
+    - Related engines: livemaker2 and [livemaker3].
 - Extracted texts from [DDWSystemTool](github.com/crskycode/DDWSystemTool) (.txt).
     - Engine aliases: [DDSystem](//vndb.org/r?f=fwDDSystem-), DDWSystem2013, DDWorks Game System.
 - Arbitrary text files via user defined parse files.
@@ -71,7 +72,7 @@ File name | Description | Examples
 
 ## Installation guide
 
-`Current version: 2024.05.24 alpha`
+`Current version: 2024.06.21 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
@@ -83,19 +84,20 @@ Alpha means the software is undergoing radical changes and core features are sti
     - Open an command prompt.
     - `python --version` #Check to make sure Python 3.4+ is installed.
     - `python -m pip install --upgrade pip` # Optional. Update pip, python's package manager program.
-1. Download py3AnyText2Spreadsheet using one of the following methods:
+1. Download py3AnyText2Spreadsheet using _one_ of the following methods:
     1. Download the latest project archive:
         - Click on the green `< > Code` button at the top -> Download ZIP.
-    1. Git:  #Requires `git` to be installed.
-        1. Open an administrative command prompt.
+    1. Download using git.
+        1. Install [git](//git-scm.com/downloads).
+        1. Open an administrative command prompt or terminal.
         2. Navigate to a directory that supports downloading and arbitrary file execution.
         3. `git clone https://github.com/gdiaz384/py3AnyText2Spreadsheet`
     1. Download from last stable release:
         - Click on on "Releases" at the side (desktop), or bottom (mobile), or [here](//github.com/gdiaz384/py3AnyText2Spreadsheet/releases).
         - Download either of the archive formats (.zip or .tar.gz).
-1. If applicable, extract py3AnyText2Spreadsheet to a directory that supports arbitrary file execution.
+1. If applicable, extract py3AnyText2Spreadsheet.zip to a directory that supports arbitrary file execution.
 1. Open an administrative command prompt.
-1. `cd /d py3AnyText2Spreadsheet`  #change directory to enter the `py3AnyText2Spreadsheet` folder.
+1. `cd /d /home/user/downloads/py3AnyText2Spreadsheet`  # Change the directory to enter the `py3AnyText2Spreadsheet` folder.
 6. `pip install -r resources/requirements.txt`
 6. `pip install -r resources/optional.txt`
 7. `python py3AnyText2Spreadsheet.py --help`
@@ -186,7 +188,7 @@ TODO: This section.
 
 ## Regarding Python Library Dependencies:
 
-- py3AnyText2Spreadsheet was developed on Python 3.7.
+- py3AnyText2Spreadsheet was developed on Python 3.7, but should work on Python 3.4+. TODO: Test this.
 - It is not necessarily clear what versions work with what other versions, in part due to the shenanigans of some developers creating deliberate incompatibilities, so just install whatever and hope it works.
 - py3AnyText2Spreadsheet and the libraries below also use libraries from the Python standard library. For an enumeration of those, check the source code.
 
@@ -203,12 +205,11 @@ escapeText.py | Recommended. | deals with extracting and inserting escape schema
 [xlwt](//pypi.org/project/xlwt/) | Optional. | Provides writing to Microsoft Excel Document (.xls). | `pip install xlwt` | 1.3.0
 [odfpy](//pypi.org/project/odfpy) | Optional. | Provides interoperability for Open Document Spreadsheet (.ods). | `pip install odfpy` | 1.4.1
 
-Libraries can also require other libraries.
-- chocolate, which implements openpyxl for use as a data structure, also implements `xlrd`, `xlwd`, `odfpy`.
-- openpyxl - The latest version of openpyxl requires Python [3.6? 3.7?]
+Libraries can also require other libraries or specific Python versions.
+- chocolate - This library implements openpyxl for use as a data structure, and also optionally implements `xlrd`, `xlwd`, `odfpy`.
+- openpyxl - The latest version of openpyxl requires Python [3.6? 3.7?] and optionally uses `defusedxml`.
 - odfpy requires: `defusedxml`.
 - chardet - The latest version of chardet requires Python 3.7+.
-- Python 3.4+ Standard library. TODO: Test this. 
 
 ## Licenses:
 

@@ -275,9 +275,9 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     # 2) the css search selector
     # 3) and the enumerate() entry #, a counter, for that css search.
     #metadataColumnRaw = mySpreadsheet.getColumn( 'C' )
-    metadataFileName=[]
-    metadataSearchTerm=[]
-    metadataEntryNumber=[]
+    metadataFileName = []
+    metadataSearchTerm = []
+    metadataEntryNumber = []
     for entry in metadataColumn:
         #https://www.w3schools.com/python/ref_string_split.asp
         #'p-titlepage_body p_4' => [ 'p-titlepage', 'body p', 4 ]
@@ -296,7 +296,7 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
     print( ('myEbook.uid=' + str(myEbook.uid) ).encode(consoleEncoding) )
 
     # This returns file names. 9 means 'ITEM_DOCUMENT'
-    #myEbook.get_items_of_type(9)
+    #myEbook.get_items_of_type( 9 )
     # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubItem.get_type
     # https://docs.sourcefabric.org/projects/ebooklib/en/latest/ebooklib.html#ebooklib.epub.EpubBook.get_items_of_type
     fileList=[]
