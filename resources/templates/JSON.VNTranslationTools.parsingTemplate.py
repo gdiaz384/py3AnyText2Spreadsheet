@@ -55,10 +55,9 @@ import resources.chocolate as chocolate            # Main data structure that wr
 # import chocolate
 
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion = sys.version_info.minor
-if sysVersion >= 5:
+if sys.version_info.minor >= 5:
     outputErrorHandling = 'namereplace'
-elif sysVersion < 5:
+elif sys.version_info.minor < 5:
     outputErrorHandling = 'backslashreplace'    
 
 
@@ -351,5 +350,5 @@ def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings=
 
     # Once inputFileContentsJSON is fully updated, convert it to a string that represents a file and send it back to the calling function so it can be written out.
     # json.dumps returns a string. json.dump writes to a file. # indent=4 is more readable, but VNT uses indent=2. Use 2 here to match with VNT.
-    return json.dumps(inputFileContentsJSON, ensure_ascii=False, indent=2)
+    return json.dumps( inputFileContentsJSON, ensure_ascii=False, indent=2 )
 

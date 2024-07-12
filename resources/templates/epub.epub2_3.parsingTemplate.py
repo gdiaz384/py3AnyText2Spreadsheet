@@ -83,10 +83,9 @@ import ebooklib.epub
 import bs4
 
 # Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
-sysVersion = sys.version_info.minor
-if sysVersion >= 5:
+if sys.version_info.minor >= 5:
     outputErrorHandling='namereplace'
-elif sysVersion < 5:
+elif sys.version_info.minor < 5:
     outputErrorHandling='backslashreplace'    
 
 

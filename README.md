@@ -2,43 +2,47 @@
 
 py3AnyText2Spreadsheet parses arbitrary files to create spreadsheets. The intent is to use use the spreadsheets to assist in the translation of natural language.
 
-The intended use case is part of a larger workflow that involves [py3TranslateLLM](//github.com/gdiaz384/py3TranslateLLM), [py3translationServer](//github.com/gdiaz384/py3translationServer), or other translation software to translate the spreadsheet. Once translation completes, py3AnyText2Spreadsheet can then be used to reinsert the translated entries back into the original files.
+The intended use case is part of a larger workflow that involves [py3TranslateLLM](//github.com/gdiaz384/py3TranslateLLM), [py3translationServer](//github.com/gdiaz384/py3translationServer), or other translation software to translate the spreadsheet. Once translation completes, py3AnyText2Spreadsheet can then be used to reinsert the translation into the original files.
 
 The project goals are to:
-- Extract strings to translate from various texual formats and insert them back after translation by using spreadsheets as the interchange format.
-- Support fully automated extraction/insertion from text files into/from spreadsheets *after* the correct parser is written.
-- Make it easier to write parsers by handling most or all of the backend logic and providing [templates] and documentation.
-- Support a wide variety of different parsers, including non-Python ones like Javascript/ECMAScript, for various textual formats.
-- Support parsers for non-encrypted texts part of obscure game engines and other obscure file formats.
+- Extract translatable strings from various text formats and insert them back after translation.
+- Support extraction/insertion into/from spreadsheets.
+- Support a wide variety of templates for various textual formats.
+- Support obscure text file formats like scripts from obscure game engines.
+- Make it easier to write parsers by:
+    - Handling the backend logic.
+    - Providing [templates](//resources/templates).
+    - Providing documentation.
+- Support non-Python parsers and languages like Javascript/ECMAScript.
+- Provide an alternative to existing regex-based parsers.
 
-Currently semi-supported:
-- eBook2 and eBook3 (.epub).
-- Subtitles: SubRip (.srt), SubstationAlpha (.ssa), Advanced SubstationAlpha (.ass), MicroDVD, MPL2, TMP, WebVTT.
-- OpenAI's Whisper captions.
+Formats currently semi-supported:
+- Plaintext files (.txt).
+- [epub2](//en.wikipedia.org/wiki/EPUB) and [epub3](https://www.w3.org/TR/epub-overview-33/) (.epub).
+- Subtitles: [SubRip](//www.matroska.org/technical/subtitles.html#srt-subtitles) (.srt), [SubstationAlpha](//www.matroska.org/technical/subtitles.html#ssaass-subtitles) (.ssa), Advanced SubstationAlpha (.ass), MicroDVD, MPL2, TMP, [WebVTT](//www.matroska.org/technical/subtitles.html#webvtt).
+- OpenAI's Whisper captions (via [pysubs2](//pypi.org/project/pysubs2)).
 - [VNTranslationTools](//github.com/arcusmaximus/VNTranslationTools)'s json (.json).
 - KAG3 used in the kirikiri game engine (.ks).
-- pylivemaker's exported csv files (.csv).
-    - Related engines: livemaker2 and [livemaker3].
+- [pylivemaker](//pypi.org/project/pylivemaker)'s exported csv files (.csv).
+    - Related engines: livemaker2 and livemaker3.
 - Extracted texts from [DDWSystemTool](github.com/crskycode/DDWSystemTool) (.txt).
     - Engine aliases: [DDSystem](//vndb.org/r?f=fwDDSystem-), DDWSystem2013, DDWorks Game System.
 - Arbitrary text files via user defined parse files.
 
 ## Support is planned for:
 
-- Better documentation.
-- Line-by-line text files (.txt).
-- More json support:
-    - Support for json where all entries and are nested under `contents` and there is no additional nesting.
-        - Multiple entries must be in a list surrounded by square brackets `[ ]`.
-    - To process additional types of json, open an issue and provide an `example.json`.
+- Markdown.
+- python.py files.
 - KAG3 used in TyranoBuilder (.ks/.ts?) and kirikiriz.
 - RPGM (MZ, MV, Ace, XP... ) # The dream.
+- Better documentation.
 
 ## Maybe:
 
 - Support for UlyssesWu's [FreeMote](//github.com/UlyssesWu/FreeMote) text files converted from PSB to json.
     - Is it possible to support .psb by importing the FreeMote library or do the files have to be converted to json at a CLI first?
-- [Open an issue] to request a format be added.
+- More json support:
+- To process other types of files, [open an issue](//github.com/gdiaz384/py3AnyText2Spreadsheet/issues/new/choose) and provide an `example.json` or a dataset sample.
 
 ## Usage Guide:
 
@@ -60,9 +64,9 @@ Currently semi-supported:
 
 File name | Description | Examples
 --- | --- | ---
-`rawFile` | The file to parse into a spreadsheet. | `backup.2024Jan10.json`, `A01.ks`, `subtitles.srt`, `ebook.epub`
+`rawFile` | The file to parse into a spreadsheet. | `backup.json`, `A01.ks`, `subtitles.srt`, `ebook.epub`
 `parsingScript` | A .py that defines how to read and write to `rawFile`. | `resources/ templates/ json_parsingTemplate.py`
-`spreadsheet` | Only required for output. For input, an output name is automatically generated. | `resources/ backup.2024Jan10.json.xlsx`
+`spreadsheet` | Only required for output. For input, an output name is automatically generated. | `resources/ backup.json.xlsx`
 
 ### The following files are optional:
 
@@ -84,7 +88,7 @@ Alpha means the software is undergoing radical changes and core features are sti
     - Open an command prompt.
     - `python --version` #Check to make sure Python 3.4+ is installed.
     - `python -m pip install --upgrade pip` # Optional. Update pip, python's package manager program.
-1. Download py3AnyText2Spreadsheet using _one_ of the following methods:
+1. Download py3AnyText2Spreadsheet using *one* of the following methods:
     1. Download the latest project archive:
         - Click on the green `< > Code` button at the top -> Download ZIP.
     1. Download using git.
@@ -107,6 +111,7 @@ Alpha means the software is undergoing radical changes and core features are sti
 - Since Python is especially very easy to work with, it is used as the default language.
 - In accordance with the project goals, parser readability and portability within an engine is a major concern but parsing speed is not.
 - The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided and is easy to extend.
+- Spreadsheets are used as the interchange format between parsing and translation since the layout makes logical sense for translation, however the parsers could easily be extended to support json or other arbitrary formats in order to work with other translation software beyond py3TranslateLLM.
 - The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program py3TranslateLLM.
 
 ### Concept Art:
@@ -195,7 +200,7 @@ TODO: This section.
 Library name | Required, Recommended, or Optional | Description | Install command | Version used to develop py3AnyText2Spreadsheet
 --- | --- | --- | --- | ---
 [openpyxl](//pypi.python.org/pypi/openpyxl) | Required. | Used for main data structure and Microsoft Excel Document (.xlsx) support. | `pip install openpyxl` | 3.1.2
-chocolate.py | Required. | Has various functions to manage using openpyxl as a data structure. | Included with py3AnyText2Spreadsheet. | See [source].
+chocolate.py | Required. | Has various functions to manage using openpyxl as a data structure. | Included with py3AnyText2Spreadsheet. | See [source](resources).
 dealWithEncoding | Required. | Handles text codecs and implements `chardet`. | Included with py3AnyText2Spreadsheet. | See [source].
 escapeText.py | Recommended. | deals with extracting and inserting escape schema `( )`, `[ ]`, `{ }` and escape sequences `\\`. | Included with py3AnyText2Spreadsheet. | See [source].
 [chardet](//pypi.org/project/chardet) | Recommended. | Improves text codec handling. | `pip install chardet` | 5.2.0
