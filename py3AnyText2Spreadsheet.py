@@ -33,6 +33,7 @@ defaultTextEncodingForKSFiles = 'shift-jis'      # UCS2 BOM LE (aka UTF-16 LE) m
 supportedSpreadsheetExtensions = [ '.csv' , '.xlsx' , '.xls' , '.ods', '.tsv' ]
 defaultSpreadsheetExtension = '.xlsx'
 defaultOutputColumn = 4
+# This path is relative to py3AnyText2Spreadsheet.py
 tempParseScriptPathAndName = 'scratchpad/temp.py'   # Do not change this. This is associated with a hardcoded import statement pointing to scratchpad\temp.py It is not possible to make tempParseScriptPathAndName dynamic without importing an additional library which is more complicated to manage than just hardcoding this.
 
 inputErrorHandling = 'strict'
@@ -130,9 +131,9 @@ def createCommandLineOptions():
 # This should also read in all of the input files.
 def validateUserInput(userInput):
     global verbose
-    verbose=userInput[ 'verbose' ]
+    verbose = userInput[ 'verbose' ]
     global debug
-    debug=userInput[ 'debug' ]
+    debug = userInput[ 'debug' ]
 
     if userInput[ 'mode' ].lower() == 'input':
         userInput[ 'mode' ] = 'input'
@@ -143,8 +144,8 @@ def validateUserInput(userInput):
     elif userInput[ 'mode' ].lower() == 'out':
         userInput[ 'mode' ] = 'output'
     else:
-        print( ('Error: Mode must be input or output. Mode=' + userInput['mode']).encode(consoleEncoding) )
-        sys.exit(1)
+        print( ( 'Error: Mode must be input or output. Mode=' + userInput[ 'mode' ] ).encode(consoleEncoding) )
+        sys.exit( 1 )
 
     functions.verifyThisFileExists( userInput[ 'rawFileName' ] )
     functions.verifyThisFileExists( userInput[ 'parsingProgram' ] )
@@ -155,33 +156,34 @@ def validateUserInput(userInput):
         else:
             print( 'Warning: The following parseSettingsFile was specified but does not exist:' )
             print( ( userInput[ 'parseSettingsFile' ] ).encode(consoleEncoding) )
-            userInput[ 'parseSettingsFile' ]=None
+            userInput[ 'parseSettingsFile' ] = None
 
     if userInput[ 'mode' ] == 'input':
         if userInput[ 'spreadsheetFileName' ] == None:
-            print( 'Info: Spreadsheet file was not specified. Will create as: '+ defaultSpreadsheetExtension )
-            userInput[ 'spreadsheetFileName' ] = userInput['rawFileName'] + defaultSpreadsheetExtension
-            userInput[ 'spreadsheetExtension'] = defaultSpreadsheetExtension
+            print( 'Info: Spreadsheet file was not specified. Will create as: ' + defaultSpreadsheetExtension )
+            userInput[ 'spreadsheetFileName' ] = userInput[ 'rawFileName' ] + defaultSpreadsheetExtension
+            userInput[ 'spreadsheetExtension' ] = defaultSpreadsheetExtension
         #if userInput[ 'spreadsheetFileName' ] != None:
         else:
-            userInput[ 'spreadsheetExtension'] = pathlib.Path( userInput[ 'spreadsheetFileName' ] ).suffix
+            userInput[ 'spreadsheetExtension' ] = pathlib.Path( userInput[ 'spreadsheetFileName' ] ).suffix
 
-        if functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) == True:
-            # Rename to .backup because it will be replaced.
-            pathlib.Path( userInput[ 'spreadsheetFileName' ] ).replace( userInput[ 'spreadsheetFileName' ] + '.backup' )
-            print ( ('Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup').encode(consoleEncoding) )
-        #elif functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) != True:
-        #else:
-        #    Update: Then user specified an output file that does not exist yet. That makes sense. All is well.
-
-        #    However, still need to verify the extension is correct: .csv .xlsx .xls .ods
-            # It is not entirely correct to call this userInput, but whatever.
+        # Verify the extension is correct: .csv .xlsx .xls .ods
+        # It is not entirely correct to call this userInput, but close enough.
         if userInput[ 'spreadsheetExtension'] in supportedSpreadsheetExtensions:
             pass
         else:
             print( ('Error: Unsupported extension for spreadsheet: \'' + userInput[ 'spreadsheetExtension' ] + '\'' ).encode(consoleEncoding) )
-            print( 'Supported extensions: ' + str(supportedSpreadsheetExtensions) )
-            sys.exit(1)
+            print( 'Supported extensions=' + str(supportedSpreadsheetExtensions) )
+            sys.exit( 1 )
+
+        if functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) == True:
+            # Rename to .backup because it will be replaced.
+            pathlib.Path( userInput[ 'spreadsheetFileName' ] ).replace( userInput[ 'spreadsheetFileName' ] + '.backup' )
+            print ( ( 'Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] ).encode(consoleEncoding) )
+        #elif functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) != True:
+        #else:
+        # Update: Then user specified an output file that does not exist yet. That makes sense. All is well.
+
 
     #elif userInput[ 'mode' ] == 'output':
     else:
@@ -240,7 +242,7 @@ def validateUserInput(userInput):
             print( str(key) + '=' + str(value) )
 
     # Handle encoding options here.
-    # TODO: update with dealWithEncoding.ofThisFile() logic for implementation of chardet library or alternatives.
+    # TODO: update with dealWithEncoding.ofThisFile() logic for implementation of chardet library alternatives.
     if userInput[ 'rawFileEncoding' ] == None:
         # Update rawFileEncoding for kirikiri .ks files to different default.
         if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks':
@@ -260,7 +262,7 @@ def validateUserInput(userInput):
 
     # Try to detect line endings from the original file so it can be used for output.
     # dealWithEncoding.detectLineEndingsFromFile() returns a tuple like ( 'windows', '\r\n' ) or ( 'unix', '\n' ) .
-    detectedLineEndings=dealWithEncoding.detectLineEndingsFromFile( userInput[ 'rawFileName' ], userInput[ 'rawFileEncoding' ] )
+    detectedLineEndings = dealWithEncoding.detectLineEndingsFromFile( userInput[ 'rawFileName' ], userInput[ 'rawFileEncoding' ] )
     #print( 'detectedLineEndings=' + detectedLineEndings[0] )
     userInput[ 'rawFileLineEndings' ] = detectedLineEndings[1]
 
@@ -268,6 +270,37 @@ def validateUserInput(userInput):
         print( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) )
 
     return userInput
+
+
+# This returns either None or a dictionary of the contents of parsingProgram.ini.  It will try to infer thename
+def getParseSettingsDictionary( parsingProgram, parseSettingsFile=None, parseSettingsFileEncoding=defaultTextFileEncoding ):
+    parsingScriptObject=pathlib.Path( parsingProgram ).absolute()
+
+    if parseSettingsFile == None:
+        #check to see if settings file exists.
+        if checkIfThisFileExists( str( parsingScriptObject.parent ) + '/' + parsingScriptObject.stem + parseSettingsExtension ) == True:
+            parseSettingsFile=str( parsingScriptObject.parent ) + '/' + parsingScriptObject.stem + parseSettingsExtension
+        elif checkIfThisFileExists( str( parsingScriptObject ) + parseSettingsExtension ) == True:
+            parseSettingsFile = str( parsingScriptObject ) + parseSettingsExtension
+
+    if debug==True:
+        print( 'iniName1=' + str( parsingScriptObject.parent ) + parsingScriptObject.stem + parseSettingsExtension)
+        print( 'iniName2=' + str( parsingScriptObject ) + parseSettingsExtension )
+
+    if parseSettingsFile != None:
+        print( 'Info: Using the following file as parseSettingsDictionary:' )
+        print( parseSettingsFile.encode( consoleEncoding ) )
+    #elif parseSettingsFile == None:
+    else:
+        print( 'Info: parseSettingsDictionary was not found.')
+        return None
+
+    parseSettingsDictionary = getDictionaryFromTextFile( parseSettingsFile, parseSettingsFileEncoding )
+
+    if debug==True:
+        print( ( 'parseSettingsDictionary=' + str( parseSettingsDictionary ) ).encode( consoleEncoding ) )
+
+    return parseSettingsDictionary
 
 
 def main( userInput=None ):
@@ -290,22 +323,22 @@ def main( userInput=None ):
     # 4. scratchpad is already labeled as a temporary directory in git.
     # The best alternative is sys.path.append(/path/to/library.py) but there is no way of knowing if 'library' has forbidden characters for library names like -, so renaming would be necessary. However, that would alter the file name the user specified, so that is absolutely not allowed which makes copying the file to a temporary location unavoidable.
 
-    parsingScriptObject=pathlib.Path(userInput['parsingProgram']).resolve()
+    parsingScriptObject = pathlib.Path( userInput['parsingProgram'] ).resolve()
     global tempParseScriptPathAndName
     tempParseScriptPathAndName = str( pathlib.Path(__file__).resolve().parent ) + '/' + tempParseScriptPathAndName
-    #print( 'tempParseScriptPathAndName=' + tempParseScriptPathAndName)
+    #print( 'tempParseScriptPathAndName=' + tempParseScriptPathAndName )
 
     pathlib.Path( tempParseScriptPathAndName ).resolve().parent.mkdir( parents = True, exist_ok = True )
 
     if debug == True:
-        print( 'copyFrom=' + str(parsingScriptObject) )
-        print( 'copyTo=' + str( pathlib.Path(tempParseScriptPathAndName).resolve()) )
+        print( 'copyFrom=' + str( parsingScriptObject ) )
+        print( 'copyTo=' + str( pathlib.Path( tempParseScriptPathAndName ).resolve() ) )
 
     # TODO: before copying, if the target exists, then read both files and compare their hash. Do not copy if their hashes match.
     # Minor issue still: No way to avoid hardcoding this unless using the importlib module.
     shutil.copy( str(parsingScriptObject) , tempParseScriptPathAndName )
 
-    sys.path.append( str( pathlib.Path(__file__).resolve().parent) )
+    sys.path.append( str( pathlib.Path(__file__).resolve().parent ) )
     import scratchpad.temp as customParser          # Hardcoded to import as scratchpad\temp.py
 
     # TODO: Now that customParser exists, the internal variable names can be updated.
@@ -314,14 +347,14 @@ def main( userInput=None ):
     #customParser.verbose=...
     #customParser.debug=...
 
-    parseSettingsDictionary=functions.getParseSettingsDictionary( userInput['parsingProgram'], parseSettingsFile=userInput[ 'parseSettingsFile' ], parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ])
+    parseSettingsDictionary = getParseSettingsDictionary( userInput['parsingProgram'], parseSettingsFile=userInput[ 'parseSettingsFile' ], parseSettingsFileEncoding=userInput[ 'parseSettingsFileEncoding' ] )
 
     # Just dump everything into a 'settings' dictionary {} so the API does not have to change as often, to present a uniform API over all the parsers, and improve user experience.
     settings = userInput.copy()
     settings[ 'fileEncoding' ] = userInput[ 'rawFileEncoding' ]
     settings[ 'parseSettingsDictionary' ] = parseSettingsDictionary
     settings[ 'outputColumn'] = userInput[ 'columnToUseForReplacements' ]
-    settings[ 'rawFileLineEndings' ] = userInput[ 'rawFileLineEndings' ] 
+    #settings[ 'rawFileLineEndings' ] = userInput[ 'rawFileLineEndings' ] 
 
     if userInput[ 'mode' ] == 'input':
         # def input( fileNameWithPath, characterDictionary=None, settings={} ):
@@ -346,7 +379,7 @@ def main( userInput=None ):
         mySpreadsheet=chocolate.Strawberry( myFileName=userInput[ 'spreadsheetFileName'], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], removeWhitespaceForCSV=True, csvDialect=None)
 
         #def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ): # mySpreadsheet is a chocolate Strawberry.
-        translatedTextFile=customParser.output( userInput['rawFileName'], mySpreadsheet=mySpreadsheet, characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
+        translatedTextFile = customParser.output( userInput['rawFileName'], mySpreadsheet=mySpreadsheet, characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
 
         if debug == True:
             print( ( 'translatedTextFile=' + str(translatedTextFile) ).encode(consoleEncoding) )
@@ -354,7 +387,7 @@ def main( userInput=None ):
         if userInput[ 'testRun' ] == True:
             return
 
-        wroteFile=False
+        wroteFile = False
         if isinstance( translatedTextFile, chocolate.Strawberry) == True:
             translatedTextFile.export( userInput[ 'translatedRawFileName' ], fileEncoding=userInput[ 'translatedRawFileEncoding' ] )
             wroteFile = True
@@ -372,15 +405,15 @@ def main( userInput=None ):
                     myFileHandle.write(entry + '\n')
             wroteFile = True
         elif translatedTextFile == None:
-            print('Empty file.')
+            print( 'Empty file.' )
         else:
-            print( 'Error: Unknown type of return value from parsing script. Must be a chocolate.Strawberry(), list, or string.')
-            print( 'type=' +  str( type(translatedTextFile) ) )
+            print( 'Error: Unknown type of return value from parsing script. Must be a chocolate.Strawberry(), list, or string.' )
+            print( 'type=' +  str( type( translatedTextFile ) ) )
 
         if wroteFile == True:
             # chocolate.Strawberry() will print out its own confirmation of writing out the file on its own, so do not duplicate that message here.
             if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
-                print( ('Wrote: '+ userInput[ 'translatedRawFileName' ]).encode(consoleEncoding) )
+                print( ( 'Wrote: ' + userInput[ 'translatedRawFileName' ] ).encode(consoleEncoding) )
 
 
 if __name__ == '__main__':

@@ -110,9 +110,10 @@ Alpha means the software is undergoing radical changes and core features are sti
 
 - Since Python is especially very easy to work with, it is used as the default language.
 - In accordance with the project goals, parser readability and portability within an engine is a major concern but parsing speed is not.
-- The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided and is easy to extend.
+- The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided. They are easy to extend as well.
 - Spreadsheets are used as the interchange format between parsing and translation since the layout makes logical sense for translation, however the parsers could easily be extended to support json or other arbitrary formats in order to work with other translation software beyond py3TranslateLLM.
 - The true name for this program is AnyText2ChocolateStrawberry named after the chocolate.Strawberry() library that is the core data structure of this program py3TranslateLLM.
+- The file written during output() will have the same line endings, `\n` or `\r\n`, as the inputfile. To alter them after the files have been written, use Notepad++ or other software that can manipulate line endings.
 
 ### Concept Art:
 
@@ -158,8 +159,8 @@ TODO: This section.
 - Open Office XML (OOXML) is the native format used in py3AnyText2Spreadsheet to store data internally during processing and should be the most convenient way to edit translated entries directly without any.
 - Here are some free and open source software ([FOSS](//en.wikipedia.org/wiki/Free_and_open-source_software)) office suits that can read and write the spreadsheet formats (.csv, .xlsx, .xls, .ods):
     - [LibreOffice](//www.libreoffice.org). [License](//www.libreoffice.org/about-us/licenses) and [source](//www.libreoffice.org/download/download-libreoffice/).
-    - Apache [OpenOffice](//www.openoffice.org). [License](//www.openoffice.org/license.html) and [source](//openoffice.apache.org/downloads.html). Note: Can read but not write to .xlsx.
     - [OnlyOffice](//www.onlyoffice.com/download-desktop.aspx) is [AGPL v3](//github.com/ONLYOFFICE/DesktopEditors/blob/master/LICENSE). [Source](//github.com/ONLYOFFICE/DesktopEditors).
+    - Apache [OpenOffice](//www.openoffice.org). [License](//www.openoffice.org/license.html) and [source](//openoffice.apache.org/downloads.html). Note: Can read but not write to .xlsx.
 
 ### Text Encoding:
 
@@ -172,6 +173,7 @@ TODO: This section.
         - `python`
         - `string=b'\xe3\x82\xaf\xe3\x83\xad\xe3\x82\xa8'`
         - `string.decode('utf-8')`
+        - 'クロエ' will get displayed
         - ctrl + z
 - Some character encodings cannot be converted to other encodings. When such errors occur, use the following error handling options:
     - [docs.python.org/3.7/library/codecs.html#error-handlers](//docs.python.org/3.7/library/codecs.html#error-handlers), and [More Examples](//www.w3schools.com/python/ref_string_encode.asp) -> Run example.
