@@ -18,7 +18,7 @@ Then again, Python is very easy to use.
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 
 """
-__version__='2024.06.21 alpha'
+__version__ = '2024.07.17 alpha'
 
 
 # Set defaults.
@@ -56,6 +56,12 @@ import resources.chocolate as chocolate             # Main wrapper for openpyxl 
 import resources.dealWithEncoding as dealWithEncoding # Handles text encoding and implements optional chardet library.
 import resources.functions as functions               # Has a lot of helper functions not directly related to this program's core logic.
 
+# To import directly:
+# import sys
+# import pathlib
+# sys.path.append( str( pathlib.Path( 'C:/resources/chocolate.py' ).resolve().parent ) )
+# import chocolate
+
 #Using the 'namereplace' error handler for text encoding requires Python 3.5+, so use an older one if necessary.
 if sys.version_info.minor >= 5:
     outputErrorHandling = 'namereplace'
@@ -64,38 +70,38 @@ elif sys.version_info.minor < 5:
 
 
 def createCommandLineOptions():
-    commandLineParser=argparse.ArgumentParser( description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingProgram.input() will be called. If mode is set to output, then parsingProgram.output() will be called.' + usageHelp)
-    commandLineParser.add_argument( 'mode', help='Must be input or output.', type=str)
+    commandLineParser = argparse.ArgumentParser( description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingProgram.input() will be called. If mode is set to output, then parsingProgram.output() will be called.' + usageHelp )
+    commandLineParser.add_argument( 'mode', help='Must be input or output.', type=str )
 
-    commandLineParser.add_argument( 'rawFile', help='Specify the text file to parse.', type=str)
-    commandLineParser.add_argument( '-e','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str)
+    commandLineParser.add_argument( 'rawFile', help='Specify the text file to parse.', type=str )
+    commandLineParser.add_argument( '-e','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str )
 
-    commandLineParser.add_argument( 'parsingProgram', help='Specify the .py script that will be used to parse rawFile.', type=str)
-    commandLineParser.add_argument( '-pse', '--parsingProgramEncoding', help='Specify the encoding of the parsingProgram.', default=None,type=str)
+    commandLineParser.add_argument( 'parsingProgram', help='Specify the .py script that will be used to parse rawFile.', type=str )
+    commandLineParser.add_argument( '-pse', '--parsingProgramEncoding', help='Specify the encoding of the parsingProgram.', default=None,type=str )
 
-    commandLineParser.add_argument( '-psf', '--parseSettingsFile', help='Optional parsingProgram.ini to convert to a settings dictionary.', default=None,type=str)
-    commandLineParser.add_argument( '-psfe', '--parseSettingsFileEncoding', help='Specify the encoding of parseSettingsFile.', default=None, type=str)
+    commandLineParser.add_argument( '-psf', '--parseSettingsFile', help='Optional parsingProgram.ini to convert to a settings dictionary.', default=None,type=str )
+    commandLineParser.add_argument( '-psfe', '--parseSettingsFileEncoding', help='Specify the encoding of parseSettingsFile.', default=None, type=str )
 
-    commandLineParser.add_argument( '-s', '--spreadsheet', help='Specify the spreadsheet file to use. For mode=input, this is the file name that will contain the extracted strings. For mode=output, this is used to insert translated entries back into the original file. Must be .csv .xlsx .xls .ods', default=None, type=str)
-    commandLineParser.add_argument( '-se', '--spreadsheetEncoding', help='Only valid for .csv files. Specify the encoding of the spreadsheet file.', default=None, type=str)
+    commandLineParser.add_argument( '-s', '--spreadsheet', help='Specify the spreadsheet file to use. For mode=input, this is the file name that will contain the extracted strings. For mode=output, this is used to insert translated entries back into the original file. Must be .csv .xlsx .xls .ods', default=None, type=str )
+    commandLineParser.add_argument( '-se', '--spreadsheetEncoding', help='Only valid for .csv files. Specify the encoding of the spreadsheet file.', default=None, type=str )
 
-    commandLineParser.add_argument( '-cn', '--characterNamesDictionary', help='Optional character dictionary containing the names of the characters. Using aliases is likely better than the actual translated names because entries will be reverted during translation.', default=None, type=str)
-    commandLineParser.add_argument( '-cne', '--characterNamesDictionaryEncoding', help='Specify the encoding of the character dictionary file.', default=None, type=str)
+    commandLineParser.add_argument( '-cn', '--characterNamesDictionary', help='Optional character dictionary containing the names of the characters. Using aliases is likely better than the actual translated names because entries will be reverted during translation.', default=None, type=str )
+    commandLineParser.add_argument( '-cne', '--characterNamesDictionaryEncoding', help='Specify the encoding of the character dictionary file.', default=None, type=str )
 
-    commandLineParser.add_argument( '-trf', '--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str)
-    commandLineParser.add_argument( '-trfe', '--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str)
+    commandLineParser.add_argument( '-trf', '--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str )
+    commandLineParser.add_argument( '-trfe', '--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str )
 
-    commandLineParser.add_argument( '-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None, type=str) # This lacks a type= declaration. Is that needed? #Update: If no type declaration is used, then str is assumed. Just make it explicit then.
+    commandLineParser.add_argument( '-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None, type=str ) # This lacks a type= declaration. Is that needed? #Update: If no type declaration is used, then str is assumed. Just make it explicit then.
 
-    commandLineParser.add_argument( '-t', '--testRun', help='Parse stuff, but do not write any output files.', action='store_true')
-    commandLineParser.add_argument( '-vb', '--verbose', help='Print more information.', action='store_true')
-    commandLineParser.add_argument( '-d', '--debug', help='Print too much information.', action='store_true')
-    commandLineParser.add_argument( '-v', '--version', help='Print version information and exit.', action='store_true')    
+    commandLineParser.add_argument( '-t', '--testRun', help='Parse stuff, but do not write any output files.', action='store_true' )
+    commandLineParser.add_argument( '-vb', '--verbose', help='Print more information.', action='store_true' )
+    commandLineParser.add_argument( '-d', '--debug', help='Print too much information.', action='store_true' )
+    commandLineParser.add_argument( '-v', '--version', help='Print version information and exit.', action='store_true' )    
 
-    commandLineArguments=commandLineParser.parse_args()
+    commandLineArguments = commandLineParser.parse_args()
 
     if commandLineArguments.version == True:
-        print( __version__.encode(consoleEncoding) )
+        print( __version__ )
         sys.exit( 0 )
 
     userInput={}
@@ -129,7 +135,7 @@ def createCommandLineOptions():
 
 
 # This should also read in all of the input files.
-def validateUserInput(userInput):
+def validateUserInput( userInput ):
     global verbose
     verbose = userInput[ 'verbose' ]
     global debug
@@ -167,19 +173,19 @@ def validateUserInput(userInput):
         else:
             userInput[ 'spreadsheetExtension' ] = pathlib.Path( userInput[ 'spreadsheetFileName' ] ).suffix
 
-        # Verify the extension is correct: .csv .xlsx .xls .ods
+        # Verify the extension is correct: .csv .xlsx .xls .ods .tsv
         # It is not entirely correct to call this userInput, but close enough.
         if userInput[ 'spreadsheetExtension'] in supportedSpreadsheetExtensions:
             pass
         else:
-            print( ('Error: Unsupported extension for spreadsheet: \'' + userInput[ 'spreadsheetExtension' ] + '\'' ).encode(consoleEncoding) )
-            print( 'Supported extensions=' + str(supportedSpreadsheetExtensions) )
+            print( ('Error: Unsupported extension for spreadsheet: \'' + userInput[ 'spreadsheetExtension' ] + '\'' ).encode( consoleEncoding ) )
+            print( 'Supported extensions=' + str( supportedSpreadsheetExtensions ) )
             sys.exit( 1 )
 
         if functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) == True:
             # Rename to .backup because it will be replaced.
             pathlib.Path( userInput[ 'spreadsheetFileName' ] ).replace( userInput[ 'spreadsheetFileName' ] + '.backup' )
-            print ( ( 'Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] ).encode(consoleEncoding) )
+            print ( ( 'Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] ).encode( consoleEncoding ) )
         #elif functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) != True:
         #else:
         # Update: Then user specified an output file that does not exist yet. That makes sense. All is well.
@@ -189,11 +195,11 @@ def validateUserInput(userInput):
     else:
         if userInput[ 'spreadsheetFileName' ] == None:
             print( 'Error: Please specify a valid spreadsheet from which to read translations.' )
-            sys.exit(1)
+            sys.exit( 1 )
 
         if functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) != True:
             print( 'Error: The following spreadsheet file was specified but does not exist:' )
-            print( ( userInput[ 'spreadsheetFileName' ] ).encode(consoleEncoding) )
+            print( ( userInput[ 'spreadsheetFileName' ] ).encode( consoleEncoding ) )
             sys.exit(1)            
 #        elif functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) == True:
 #        else:
@@ -205,7 +211,7 @@ def validateUserInput(userInput):
             # What would be sane behavior here? Maybe just append translated.extension?
             userInput[ 'translatedRawFileName' ] = userInput[ 'rawFileName' ] + '.translated' + pathlib.Path( userInput[ 'rawFileName'] ).suffix
             print( 'Warning: No output file name was specified for the translated file. Using:')
-            print( userInput[ 'translatedRawFileName'].encode(consoleEncoding) )
+            print( userInput[ 'translatedRawFileName'].encode( consoleEncoding ) )
 
     # This is about to be used, so map it now.
     if userInput[ 'characterDictionaryEncoding' ] == None:
@@ -214,9 +220,9 @@ def validateUserInput(userInput):
     if userInput[ 'characterDictionaryFileName' ] != None:
         if functions.checkIfThisFileExists( userInput[ 'characterDictionaryFileName' ] ) == True:
             # Read in characterDictionary.csv
-            userInput[ 'characterDictionary' ]=functions.importDictionaryFromFile( userInput[ 'characterDictionaryFileName' ], encoding=userInput[ 'characterDictionaryEncoding' ] )
+            userInput[ 'characterDictionary' ] = functions.importDictionaryFromFile( userInput[ 'characterDictionaryFileName' ], encoding=userInput[ 'characterDictionaryEncoding' ] )
             if debug == True:
-                print( ( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) ).encode(consoleEncoding) )
+                print( ( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) ).encode( consoleEncoding ) )
 
         #elif functions.checkIfThisFileExists( userInput[ 'characterDictionaryFileName' ] ) != True:
         else:
@@ -232,33 +238,27 @@ def validateUserInput(userInput):
     # This cannot be fully validated, checked to see if it exists, because the spreadsheet needs to be parsed first. So far, only the file name has been validated, so only setting a default value can be done at this point.
     if userInput[ 'columnToUseForReplacements' ] == None:
         userInput[ 'columnToUseForReplacements' ] = defaultOutputColumn
-        userInput[ 'outputColumnIsDefault' ]=True
+        userInput[ 'outputColumnIsDefault' ] = True
     else:
-        userInput[ 'outputColumnIsDefault' ]=False
+        userInput[ 'outputColumnIsDefault' ] = False
 
     if userInput[ 'debug' ] == True:
         userInput[ 'verbose' ] = True
         for key, value in userInput.items():
-            print( str(key) + '=' + str(value) )
+            print( str( key ) + '=' + str( value ) )
 
     # Handle encoding options here.
-    # TODO: update with dealWithEncoding.ofThisFile() logic for implementation of chardet library alternatives.
-    if userInput[ 'rawFileEncoding' ] == None:
-        # Update rawFileEncoding for kirikiri .ks files to different default.
-        if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks':
-            userInput[ 'rawFileEncoding' ] = defaultTextEncodingForKSFiles
-        else:
-            userInput[ 'rawFileEncoding' ] = defaultTextFileEncoding
-        print( ('Warning: rawFileEncoding was not specified. Setting to \'' + userInput[ 'rawFileEncoding' ] +'\' This is probably incorrect.' ).encode(consoleEncoding) )
+    # TODO: Update dealWithEncoding.ofThisFile() logic with to implement chardet library alternatives.
+    #Syntax: def ofThisFile( myFileName, userInputForEncoding=None, fallbackEncoding=defaultTextFileEncoding ):
+    if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks'
+        # kirikiri .ks files have a different default of shift-jis.
+        userInput[ 'rawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'rawFileName'], userInput[ 'rawFileEncoding' ], defaultTextEncodingForKSFiles )
+    else:
+        userInput[ 'rawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'rawFileName'], userInput[ 'rawFileEncoding' ], defaultTextFileEncoding )
 
-    if userInput[ 'parseSettingsFileEncoding' ] == None:
-        userInput[ 'parseSettingsFileEncoding' ] = defaultTextFileEncoding
-
-    if userInput[ 'spreadsheetFileEncoding' ] == None:
-        userInput[ 'spreadsheetFileEncoding' ] = defaultTextFileEncoding
-
-    if userInput[ 'translatedRawFileEncoding' ] == None:
-        userInput[ 'translatedRawFileEncoding' ] = userInput[ 'rawFileEncoding' ]
+    userInput[ 'parseSettingsFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'parseSettingsFile'], userInput[ 'parseSettingsFileEncoding' ], defaultTextFileEncoding )
+    userInput[ 'spreadsheetFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'spreadsheetFileName'], userInput[ 'spreadsheetFileEncoding' ], defaultTextFileEncoding )
+    userInput[ 'translatedRawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'translatedRawFileName'], userInput[ 'translatedRawFileEncoding' ], defaultTextFileEncoding )
 
     # Try to detect line endings from the original file so it can be used for output.
     # dealWithEncoding.detectLineEndingsFromFile() returns a tuple like ( 'windows', '\r\n' ) or ( 'unix', '\n' ) .
@@ -358,7 +358,7 @@ def main( userInput=None ):
 
     if userInput[ 'mode' ] == 'input':
         # def input( fileNameWithPath, characterDictionary=None, settings={} ):
-        mySpreadsheet=customParser.input( userInput['rawFileName'], characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
+        mySpreadsheet = customParser.input( userInput['rawFileName'], characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
  
         if mySpreadsheet == None:
             print( 'Empty file.' )
@@ -376,13 +376,13 @@ def main( userInput=None ):
 
     elif userInput[ 'mode' ] == 'output':
 
-        mySpreadsheet=chocolate.Strawberry( myFileName=userInput[ 'spreadsheetFileName'], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], removeWhitespaceForCSV=True, csvDialect=None)
+        mySpreadsheet = chocolate.Strawberry( myFileName=userInput[ 'spreadsheetFileName'], fileEncoding=userInput[ 'spreadsheetFileEncoding' ], removeWhitespaceForCSV=True, csvDialect=None)
 
         #def output( fileNameWithPath, mySpreadsheet, characterDictionary=None, settings={} ): # mySpreadsheet is a chocolate Strawberry.
         translatedTextFile = customParser.output( userInput['rawFileName'], mySpreadsheet=mySpreadsheet, characterDictionary=userInput[ 'characterDictionary' ], settings=settings )
 
         if debug == True:
-            print( ( 'translatedTextFile=' + str(translatedTextFile) ).encode(consoleEncoding) )
+            print( ( 'translatedTextFile=' + str(translatedTextFile) ).encode( consoleEncoding ) )
 
         if userInput[ 'testRun' ] == True:
             return
@@ -402,7 +402,8 @@ def main( userInput=None ):
                     # This might corrupt the output on Linux/Unix or vica-versa on Windows if the software is expecting and requires a specific type of newline \r\n or \n.
                     # By default, Python will translate \n based upon the host OS, not what the software that will actually read the file is expecting because it cannot possibly know that, therefore this is a potential source of corruption.
                     # A sane way of handling this is to maybe determine the line ending of the original file and use that line ending schema here. How are line endings determined? Huristics? How does Python determine line endings correctly when the platform does not match the source file?
-                    myFileHandle.write(entry + '\n')
+                    # Update: updated dealWithEncoding to also detect line endings for the input file. If the output is corrupt now, then so was the input. TODO: Check this actually works as intended.
+                    myFileHandle.write( entry + userInput[ 'rawFileLineEndings' ] )
             wroteFile = True
         elif translatedTextFile == None:
             print( 'Empty file.' )
@@ -413,10 +414,10 @@ def main( userInput=None ):
         if wroteFile == True:
             # chocolate.Strawberry() will print out its own confirmation of writing out the file on its own, so do not duplicate that message here.
             if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
-                print( ( 'Wrote: ' + userInput[ 'translatedRawFileName' ] ).encode(consoleEncoding) )
+                print( ( 'Wrote: ' + userInput[ 'translatedRawFileName' ] ).encode( consoleEncoding ) )
 
 
 if __name__ == '__main__':
     main()
-    sys.exit(0)
+    sys.exit( 0 )
 

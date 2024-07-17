@@ -19,7 +19,7 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__='2024.07.05'
+__version__ = '2024.07.05'
 
 
 # Set defaults.
@@ -94,6 +94,22 @@ def normalizeEncoding( string, encoding ):
     return tempString
 
 
+# Returns True or False depending upon if myFile, myFolder exists or not.
+def checkIfThisFileExists( myFile ):
+    if ( myFile == None ) or ( os.path.isfile( str( myFile ) ) != True ):
+        return False
+    return True
+
+def checkIfThisFolderExists( myFolder ):
+    if ( myFolder == None ) or ( os.path.isdir( str( myFolder ) ) != True ):
+        return False
+    return True
+
+#Usage:
+#checkIfThisFileExists( 'myfile.csv' )
+#checkIfThisFileExists( myVar )
+
+
 #Errors out if myFile or myFolder does not exist.
 def verifyThisFileExists( myFile, nameOfFileToOutputInCaseOfError=None ):
     if myFile == None:
@@ -112,24 +128,9 @@ def verifyThisFolderExists( myFolder, nameOfFileToOutputInCaseOfError=None ):
         sys.exit( 1 )
 
 #Usage:
-#verifyThisFileExists('myfile.csv','myfile.csv')
-#verifyThisFileExists(myVar, 'myVar')
-
-
-# Returns True or False depending upon if myFile, myFolder exists or not.
-def checkIfThisFileExists( myFile ):
-    if ( myFile == None ) or ( os.path.isfile( str( myFile ) ) != True ):
-        return False
-    return True
-
-def checkIfThisFolderExists( myFolder ):
-    if ( myFolder == None ) or ( os.path.isdir( str( myFolder ) ) != True ):
-        return False
-    return True
-
-#Usage:
-#checkIfThisFileExists('myfile.csv')
-#checkIfThisFileExists(myVar)
+#verifyThisFileExists( 'myfile.csv', 'myfile.csv' )
+#verifyThisFileExists( myVar, 'myVar')
+#verifyThisFileExists( myVar )
 
 
 # This function builds a Python dictionary from a text file and then returns it to the caller.
@@ -311,6 +312,8 @@ def importDictionaryFromFile( myFile, encoding=defaultTextFileEncoding ):
     else:
         print( ('Warning: Unrecognized extension for file: ' + str( myFile ) ).encode( consoleEncoding ) )
         return None
+        # Alternatively, this could assume it is dealing with a text file that conforms to the key=value pairs syntax that also has # as comments. These files should also return dictionaries or None if there are any malformed entries. However, since that is less clear, a Warning: should probably be printed here since this code is not really meant to be called this way. Then again, having flexible code is a good thing. 
+        # readSettingsFromTextFile() would need to be updated to soft-fail by returning None instead of crashing the program on malformed data. Does updating it that way make sense? A strict=True, flag could be added to toggle this behavior without changing existing calling code, but changing the source to be strict about it is probably for the better.
 
 
 # Even if importing to a Python dictionary from .csv .xlsx .xls .ods .tsv, the rule is that the first entry for spreadsheets is headers, so the first key=value entry must be skipped regardless.
@@ -349,8 +352,7 @@ def importDictionaryFromCSV( myFile, myFileEncoding=defaultTextFileEncoding, ign
 def importDictionaryFromXLSX( myFile, myFileEncoding=defaultTextFileEncoding ):
     print( 'Hello World.' )
     workbook = openpyxl.load_workbook( filename=myFile ) #, data_only=)
-    spreadsheet=workbook.active
-    # TODO: Put stuff here.
+    spreadsheet = workbook.active
 
 
 def importDictionaryFromXLS( myFile, myFileEncoding=defaultTextFileEncoding ):

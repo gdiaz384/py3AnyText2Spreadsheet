@@ -112,28 +112,28 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     # Unpack some variables.
     if 'fileEncoding' in settings:
-        fileEncoding=settings['fileEncoding']
+        fileEncoding = settings['fileEncoding']
     else:
-        fileEncoding=defaultTextEncoding
+        fileEncoding = defaultTextEncoding
 
     if 'parseSettingsDictionary' in settings:
-        parseSettingsDictionary=settings['parseSettingsDictionary']
+        parseSettingsDictionary = settings['parseSettingsDictionary']
     else:
-        parseSettingsDictionary=None
+        parseSettingsDictionary = None
 
     # The input file is actually a .csv which is a type of spreadsheet already, so do the lazy thing and convert it into a chocolate.Strawberry()
     tempSpreadsheet = chocolate.Strawberry( fileNameWithPath, fileEncoding=fileEncoding, removeWhitespaceForCSV=True )
 
-    rawDataColumn=tempSpreadsheet.getColumn( 'D' )
-    metadataColumn=tempSpreadsheet.getColumn( 'A' )
+    rawDataColumn = tempSpreadsheet.getColumn( 'D' )
+    metadataColumn = tempSpreadsheet.getColumn( 'A' )
 
-    temporaryList=[]
-    for counter,cell in enumerate(rawDataColumn):
+    temporaryList = []
+    for counter,cell in enumerate( rawDataColumn ):
         if counter == 0:
             continue
 
-        tempData=None
-        tempSpeaker=None
+        tempData = None
+        tempSpeaker = None
 
         if cell.find('「') == -1:
             tempData=cell.strip()
@@ -141,30 +141,30 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
             tempData=cell.strip()
         else:
             # Then assume a speaker is in the cell and try to extract it.
-            tempSpeaker=cell.partition('「')[0].strip()
-            tempData='「'+cell.partition('「')[2].strip()
+            tempSpeaker = cell.partition( '「' )[ 0 ].strip()
+            tempData = '「' + cell.partition( '「' )[ 2 ].strip()
 
         if tempSpeaker == '':
-            tempSpeaker=None
+            tempSpeaker = None
 
         # Fix characterName.
         if ( tempSpeaker != None ) and ( characterDictionary != None ):
             if tempSpeaker in characterDictionary:
-                tempSpeaker=characterDictionary[tempSpeaker]
+                tempSpeaker = characterDictionary[ tempSpeaker ]
             else:
                 print( 'Warning: Speaker not in characterDictionary was found at line', counter ) 
 
-        temporaryList.append( [tempData, tempSpeaker, metadataColumn[counter] ] )
+        temporaryList.append( [ tempData, tempSpeaker, metadataColumn[ counter ] ] )
 
     # Create a chocolate.Strawberry().
-    mySpreadsheet=chocolate.Strawberry()
+    mySpreadsheet = chocolate.Strawberry()
 
     # Very important: Create the correct header.
-    mySpreadsheet.appendRow( ['rawText', 'speaker','metadata' ] )
+    mySpreadsheet.appendRow( [ 'rawText', 'speaker', 'metadata' ] )
 
     # Add data entries.
     for entry in temporaryList:
-        mySpreadsheet.appendRow( [ entry[0], entry[1], entry[2] ])
+        mySpreadsheet.appendRow( [ entry[ 0 ], entry[ 1 ], entry[ 2 ] ])
 
     if debug == True:
         mySpreadsheet.printAllTheThings()

@@ -76,7 +76,7 @@ File name | Description | Examples
 
 ## Installation guide
 
-`Current version: 2024.06.21 alpha`
+`Current version: 2024.07.17 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
