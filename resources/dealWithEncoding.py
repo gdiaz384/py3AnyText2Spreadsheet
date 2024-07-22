@@ -14,7 +14,7 @@ Usage: See below. Like at the bottom.
 
 License: See main program.
 """
-__version__='2024.06.22'
+__version__='2024.07.22'
 
 
 #set defaults
@@ -69,9 +69,8 @@ def detectEncoding(myFileName):
                 openFile.close()
                 break
     temp=detector.result['encoding']
-    if printStuff == True:
-        if debug == True:
-            print( (myFileName + ':' + str(detector.result) ).encode(consoleEncoding) )
+    if ( printStuff == True ) and ( debug == True ):
+        print( (myFileName + ':' + str(detector.result) ).encode(consoleEncoding) )
     return temp
 
 
@@ -91,8 +90,8 @@ def ofThisFile( myFileName, userInputForEncoding=None, fallbackEncoding=defaultT
     # Check if the file exists.
     if os.path.isfile(myFileName) != True:
         # if the user did not specify an encoding and if the file does not exist, just return the fallbackEncoding
-        if printStuff == True:
-            print( ('Warning: The file:\'' + myFileName + '\' does not exist. Returning:\'' + fallbackEncoding + '\'').encode(consoleEncoding) )
+        if ( printStuff == True ) and ( verbose == True ):
+            print( ( 'Warning: The file:\'' + myFileName + '\' does not exist. Returning:\'' + fallbackEncoding + '\'' ).encode( consoleEncoding ) )
         return fallbackEncoding
 
     # Assume file exists now.

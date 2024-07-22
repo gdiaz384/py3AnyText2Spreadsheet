@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """
 Description:
-py3AnyText2Spreadsheet supports Python parsing scripts that can convert various formats, like .epub, .srt, .ass, .ks, .json, and so forth to and from spreadsheet formats, .csv, .xlsx, .xls, .ods. 
+py3AnyText2Spreadsheet supports Python parsing scripts that can convert various formats, like .epub, .srt, .ass, .ks, .json, and so forth to and from spreadsheet formats, .csv, .xlsx, .xls, .ods, .tsv.
 
 Concept art:
 The idea is if py3AnyText2Spreadsheet called directly as 'python py3AnyText2Spreadsheet.py --file input', then it should output .csv and .xlsx files instead.
@@ -30,6 +30,7 @@ defaultTextFileEncoding = 'utf-8'                     # Settings that should not
 defaultTextEncodingForKSFiles = 'shift-jis'      # UCS2 BOM LE (aka UTF-16 LE) might also work. Need to test.
 # shift-jis is a text encoding. In terms of ANSI code pages, it maps to cp932.
  
+parseSettingsExtension = '.ini'
 supportedSpreadsheetExtensions = [ '.csv' , '.xlsx' , '.xls' , '.ods', '.tsv' ]
 defaultSpreadsheetExtension = '.xlsx'
 defaultOutputColumn = 4
@@ -250,7 +251,7 @@ def validateUserInput( userInput ):
     # Handle encoding options here.
     # TODO: Update dealWithEncoding.ofThisFile() logic with to implement chardet library alternatives.
     #Syntax: def ofThisFile( myFileName, userInputForEncoding=None, fallbackEncoding=defaultTextFileEncoding ):
-    if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks'
+    if pathlib.Path( userInput[ 'rawFileName'] ).suffix == '.ks':
         # kirikiri .ks files have a different default of shift-jis.
         userInput[ 'rawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'rawFileName'], userInput[ 'rawFileEncoding' ], defaultTextEncodingForKSFiles )
     else:
@@ -278,9 +279,9 @@ def getParseSettingsDictionary( parsingProgram, parseSettingsFile=None, parseSet
 
     if parseSettingsFile == None:
         #check to see if settings file exists.
-        if checkIfThisFileExists( str( parsingScriptObject.parent ) + '/' + parsingScriptObject.stem + parseSettingsExtension ) == True:
+        if functions.checkIfThisFileExists( str( parsingScriptObject.parent ) + '/' + parsingScriptObject.stem + parseSettingsExtension ) == True:
             parseSettingsFile=str( parsingScriptObject.parent ) + '/' + parsingScriptObject.stem + parseSettingsExtension
-        elif checkIfThisFileExists( str( parsingScriptObject ) + parseSettingsExtension ) == True:
+        elif functions.checkIfThisFileExists( str( parsingScriptObject ) + parseSettingsExtension ) == True:
             parseSettingsFile = str( parsingScriptObject ) + parseSettingsExtension
 
     if debug==True:
@@ -304,7 +305,6 @@ def getParseSettingsDictionary( parsingProgram, parseSettingsFile=None, parseSet
 
 
 def main( userInput=None ):
-
     if not isinstance( userInput, dict ):
         # Define command line options.
         # userInput is a dictionary.

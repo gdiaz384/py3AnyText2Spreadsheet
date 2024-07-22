@@ -32,7 +32,6 @@ defaultTextFileEncoding = 'utf-8'   # Settings that should not be left as a defa
 
 linesThatBeginWithThisAreComments = '#'
 assignmentOperatorInSettingsFile = '='
-parseSettingsExtension = '.ini'
 
 # Why yahoo? They are unlikely to go anywhere any time soon.
 #domainWithoutProtocolToResolveForInternetConnectivity = 'yahoo.com'
@@ -307,7 +306,7 @@ def importDictionaryFromFile( myFile, encoding=defaultTextFileEncoding ):
         return importDictionaryFromXLS( myFile, myFileEncoding=encoding )
     elif myFileExtensionOnly == '.ods':
         return importDictionaryFromODS( myFile, myFileEncoding=encoding )
-   elif myFileExtensionOnly == '.tsv':
+    elif myFileExtensionOnly == '.tsv':
         return importDictionaryFromTSV( myFile, myFileEncoding=encoding, ignoreWhitespace=False )
     else:
         print( ('Warning: Unrecognized extension for file: ' + str( myFile ) ).encode( consoleEncoding ) )
