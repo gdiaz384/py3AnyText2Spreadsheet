@@ -75,7 +75,7 @@ def createCommandLineOptions():
     commandLineParser.add_argument( 'mode', help='Must be input or output.', type=str )
 
     commandLineParser.add_argument( 'rawFile', help='Specify the text file to parse.', type=str )
-    commandLineParser.add_argument( '-e','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str )
+    commandLineParser.add_argument( '-fe','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str )
 
     commandLineParser.add_argument( 'parsingProgram', help='Specify the .py script that will be used to parse rawFile.', type=str )
     commandLineParser.add_argument( '-pse', '--parsingProgramEncoding', help='Specify the encoding of the parsingProgram.', default=None,type=str )
@@ -86,8 +86,8 @@ def createCommandLineOptions():
     commandLineParser.add_argument( '-s', '--spreadsheet', help='Specify the spreadsheet file to use. For mode=input, this is the file name that will contain the extracted strings. For mode=output, this is used to insert translated entries back into the original file. Must be .csv .xlsx .xls .ods', default=None, type=str )
     commandLineParser.add_argument( '-se', '--spreadsheetEncoding', help='Only valid for .csv files. Specify the encoding of the spreadsheet file.', default=None, type=str )
 
-    commandLineParser.add_argument( '-cn', '--characterNamesDictionary', help='Optional character dictionary containing the names of the characters. Using aliases is likely better than the actual translated names because entries will be reverted during translation.', default=None, type=str )
-    commandLineParser.add_argument( '-cne', '--characterNamesDictionaryEncoding', help='Specify the encoding of the character dictionary file.', default=None, type=str )
+    commandLineParser.add_argument( '-cnd', '--characterNamesDictionary', help='Optional character dictionary containing the names of the characters. Using aliases is likely better than the actual translated names because entries will be reverted during translation.', default=None, type=str )
+    commandLineParser.add_argument( '-cnde', '--characterNamesDictionaryEncoding', help='Specify the encoding of the character dictionary file.', default=None, type=str )
 
     commandLineParser.add_argument( '-trf', '--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str )
     commandLineParser.add_argument( '-trfe', '--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str )

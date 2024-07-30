@@ -61,16 +61,16 @@ except:
 #detectEncoding() is never really used, so it should probably just be deleted.
 def detectEncoding(myFileName):
     #import chardet
-    detector=chardet.UniversalDetector()
-    with open(myFileName, 'rb') as openFile:
+    detector = chardet.UniversalDetector()
+    with open( myFileName, 'rb' ) as openFile:
         for line in openFile:
             detector.feed(line)
             if detector.done == True:
                 openFile.close()
                 break
-    temp=detector.result['encoding']
+    temp = detector.result[ 'encoding' ]
     if ( printStuff == True ) and ( debug == True ):
-        print( (myFileName + ':' + str(detector.result) ).encode(consoleEncoding) )
+        print( ( myFileName + ':' + str( detector.result ) ).encode(consoleEncoding) )
     return temp
 
 

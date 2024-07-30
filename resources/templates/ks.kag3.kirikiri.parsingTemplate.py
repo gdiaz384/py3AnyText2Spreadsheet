@@ -135,7 +135,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     endDelimiterForCharaName = str( parseSettingsDictionary[ 'theCharacterNameAlwaysEndsWith' ] ).strip()
 
     #while line is not empty (at least \n is present)
-    while inputFileContents != '':
+    # while inputFileContents != '':
     for myLine in inputFileContents:
         #myLine=inputFileContents.partition('\n')[0] #returns first line of string to process in the current loop
 
