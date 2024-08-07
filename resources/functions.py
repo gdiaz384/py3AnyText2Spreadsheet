@@ -19,7 +19,7 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__ = '2024.07.05'
+__version__ = '2024.08.06'
 
 
 # Set defaults.
@@ -40,6 +40,107 @@ defaultTimeout = 10
 
 inputErrorHandling = 'strict'
 #outputErrorHandling = 'namereplace'  # This gets set dynamically below.
+
+halfToFullAsciiMap={
+' ' : '\u3000', # space. In utf-8 encoded binary, it is b'\xe3\x80\x80'.
+'!' : '！', # explamation mark
+'"' : '＂', # double quote
+'#' : '＃', # number sign
+'$' : '＄', # dollar
+'%' : '％', # percent sign
+'%' : '＆', # ampersand
+'\'' : '＇', # single quote
+'(' : '（', # left open parenthesis
+')' : '）', # right open parenthesis
+'*' : '＊', # asterisk
+'+' : '＋', # plus sign
+',' : '，', # comma
+'-' : '－', # hyphen, minus
+'.' : '．', # period, dot
+'/' : '／', # slash
+'0' : '０',
+'1' : '１',
+'2' : '２',
+'3' : '３',
+'4' : '４',
+'5' : '５',
+'6' : '６',
+'7' : '７',
+'8' : '８',
+'9' : '９',
+':' : '：', # colon
+';' : '；', # semi-colon
+'<' : '＜', # less than, left/open angled bracket
+'=' : '＝', # equals
+'>' : '＞', # greater than, right/closed angled bracket
+'?' : '？', # question mark
+'@' : '＠', # at sign
+'A' : 'Ａ',
+'B' : 'Ｂ',
+'C' : 'Ｃ',
+'D' : 'Ｄ',
+'E' : 'Ｅ',
+'F' : 'Ｆ',
+'G' : 'Ｇ',
+'H' : 'Ｈ',
+'I' : 'Ｉ',
+'J' : 'Ｊ',
+'K' : 'Ｋ',
+'L' : 'Ｌ',
+'M' : 'Ｍ',
+'N' : 'Ｎ',
+'O' : 'Ｏ',
+'P' : 'Ｐ',
+'Q' : 'Ｑ',
+'R' : 'Ｒ',
+'S' : 'Ｓ',
+'T' : 'Ｔ',
+'U' : 'Ｕ',
+'V' : 'Ｖ',
+'W' : 'Ｗ',
+'X' : 'Ｘ',
+'Y' : 'Ｙ',
+'Z' : 'Ｚ',
+'[' : '［', # left/opening square bracket
+'\\' : r'＼', # backslash
+']' : '］', # right/closing square bracket
+'^' : '＾', # caret, circumflex
+'_' : '＿', # underscore
+'`' : '｀', # grave accent
+'a' : 'ａ',
+'b' : 'ｂ',
+'c' : 'ｃ',
+'d' : 'ｄ',
+'e' : 'ｅ',
+'f' : 'ｆ',
+'g' : 'ｇ',
+'h' : 'ｈ',
+'i' : 'ｉ',
+'j' : 'ｊ',
+'k' : 'ｋ',
+'l' : 'ｌ',
+'m' : 'ｍ',
+'n' : 'ｎ',
+'o' : 'ｏ',
+'p' : 'ｐ',
+'q' : 'ｑ',
+'r' : 'ｒ',
+'s' : 'ｓ',
+'t' : 'ｔ',
+'u' : 'ｕ',
+'v' : 'ｖ',
+'w' : 'ｗ',
+'x' : 'ｘ',
+'y' : 'ｙ',
+'z' : 'ｚ',
+'{' : '', # left/opening brace
+'|' : '', # verical bar, pipe
+'}' : '', # right/closing brace
+'~' : '', # equivalency sign, tilde
+# TODO: Extended characters.
+'€' : '€',
+'…' : '…', # elipses
+}
 
 usageHelp = '\n Usage: python py3AnyText2Spreadsheet --help'
 
@@ -93,6 +194,60 @@ def normalizeEncoding( string, encoding ):
     return tempString
 
 
+def halfToFullWidthAscii( string ):
+    if string == None:
+        return None
+    if string == '':
+        return ''
+
+    tempString=''
+    error = False
+    for i in string:
+        if i in halfToFullAsciiMap.keys():
+            tempString=tempString + halfToFullAsciiMap[ i ]
+        else:
+            tempString=tempString + i
+            if error == False:
+                error = True
+
+    if debug == True:
+        print( tempString.encode( consoleEncoding ) )
+        print( tempString == string )
+        if error == True:
+            # This will also error out if there are any characters that are already full width.
+            print( ( 'Warning, unable to convert all characters to full width in string: \'' + string + '\'' ).encode( consoleEncoding ) )
+    return tempString
+
+
+def fullToHalfWidthAscii( string ):
+    if string == None:
+        return None
+    if string == '':
+        return ''
+
+    tempString=''
+    error = False
+    for i in string:
+        if i in halfToFullAsciiMap.values():
+            # Slow. Is there a better way of doing this? No right?
+            for key,value in halfToFullAsciiMap.items():
+                if i == value:
+                    tempString=tempString + key
+                    break
+        else:
+            tempString = tempString + i
+            if error == False:
+                error = True
+
+    if debug == True:
+        print( tempString.encode( consoleEncoding ) )
+        print( tempString == string )
+        if error == True:
+            # This will also error out if there are any characters that are already half width.
+            print( ( 'Warning, unable to convert all characters to half width in string: \'' + string + '\'' ).encode( consoleEncoding ) )
+    return tempString
+
+
 # Returns True or False depending upon if myFile, myFolder exists or not.
 def checkIfThisFileExists( myFile ):
     if ( myFile == None ) or ( os.path.isfile( str( myFile ) ) != True ):
@@ -112,18 +267,18 @@ def checkIfThisFolderExists( myFolder ):
 #Errors out if myFile or myFolder does not exist.
 def verifyThisFileExists( myFile, nameOfFileToOutputInCaseOfError=None ):
     if myFile == None:
-        print( ( 'Error: Please specify a valid file for: ' + str( nameOfFileToOutputInCaseOfError ) + usageHelp ).encode( consoleEncoding ))
+        print( ( 'Error: Please specify a valid file for: ' + str( nameOfFileToOutputInCaseOfError ) ).encode( consoleEncoding ) )
         sys.exit( 1 )
     if os.path.isfile( myFile ) != True:
-        print( ( 'Error: Unable to find file \'' + str( nameOfFileToOutputInCaseOfError ) + '\' ' + usageHelp ).encode( consoleEncoding ) )
+        print( ( 'Error: Unable to find file \'' + str( nameOfFileToOutputInCaseOfError ) + '\' ' ).encode( consoleEncoding ) )
         sys.exit( 1 )
 
 def verifyThisFolderExists( myFolder, nameOfFileToOutputInCaseOfError=None ):
     if myFolder == None:
-        print( ( 'Error: Please specify a valid folder for: ' + str( nameOfFileToOutputInCaseOfError ) + usageHelp ).encode( consoleEncoding ))
+        print( ( 'Error: Please specify a valid folder for: ' + str( nameOfFileToOutputInCaseOfError ) ).encode( consoleEncoding ) )
         sys.exit( 1 )
     if os.path.isdir( myFolder ) != True:
-        print( ( 'Error: Unable to find folder \'' + str( nameOfFileToOutputInCaseOfError ) + '\' ' + usageHelp ).encode( consoleEncoding ) )
+        print( ( 'Error: Unable to find folder \'' + str( nameOfFileToOutputInCaseOfError ) + '\' ' ).encode( consoleEncoding ) )
         sys.exit( 1 )
 
 #Usage:
@@ -135,7 +290,7 @@ def verifyThisFolderExists( myFolder, nameOfFileToOutputInCaseOfError=None ):
 # This function builds a Python dictionary from a text file and then returns it to the caller.
 # The idea is to read program settings from text files using a predetermined list of rules.
 # The text file uses the syntax: setting=value, # are comments, empty/whitespace lines ignored.
-def getDictionaryFromTextFile( fileNameWithPath, fileNameEncoding, consoleEncoding=consoleEncoding, errorHandlingType=inputErrorHandling, debug=debug):
+def getDictionaryFromTextFile( fileNameWithPath, fileNameEncoding, consoleEncoding=consoleEncoding, errorHandlingType=inputErrorHandling, debug=debug ):
     if fileNameWithPath == None:
         print( ( 'Warning: Cannot read settings from None entry: ' + str( fileNameWithPath ) ).encode( consoleEncoding ) )
         return None
