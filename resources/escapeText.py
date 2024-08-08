@@ -21,7 +21,7 @@ Therefore, the symbols that correctly represent the escapeSchema above are < >
 - An 'escapeSequence' signifies a specific sequence of characters that should be removed from the string when considering the true meaning of the string.
 An example is 'pie \color52pie2'.
 The meaning of the string is 'pie pie2' but the \color52 part tells some parser somewhere to manipulate the contents in a special way prior to displaying it. Since \color52 is not part of the core meaning of the string, but rather parser syntax, it should be removed when considering underlying meaning.
-Therefore, the symbol that correctly represents the escapeSequence is \color52.
+Therefore, the symbols that correctly represents the escapeSequence are \color52.
 
 - In Python, escapeSequences should be represented as r'\color52' where the string is formed with an r in front of it which means 'this is a raw string'. Without the raw string syntax, the r in front, Python would interpret '\c' in '\color52' as an escape sequence and try to find some sort of meaning in '\c' and manipulate the string as a result of '\c' thus possibly distorting the result if it found one. The r syntax removes this unintended behavior and tells Python to not alter the string.
 
@@ -34,7 +34,7 @@ r'\aolor52'             => '\\aolor52'
 print( r'\aolor52' )  => \aolor52
 Conclusion: Do not worry too much about how the data is displayed. The underlying data is not corrupt. Just remember to use r in front.
 
-- The find() string method can check if a string appears in another string and it returns the position where it is found.
+- The string.find() method can check if a string appears in another string and it returns the position where it is found.
 'pie'.find('p') would return 0 because the p character is at the start of the string and strings are indexed starting from 0.
 'pie'.find('e') would return 2 because the e character appears starting at index position 2 of the string. Index position 2 is the 3rd character in the string.
 'pie'.find('w') returns -1 because the w character does not appear in the string. -1 means 'does not appear'.
@@ -59,7 +59,7 @@ Conclusion: Do not worry too much about how the data is displayed. The underlyin
 
 Copyright (c) 2024 gdiaz384; License: See main program.
 """
-__version__='2024.06.21'
+__version__='2024.08.07'
 
 
 # Import stuff.
@@ -69,13 +69,18 @@ import string
 # Set defaults.
 consoleEncoding = 'utf-8'
 defaultGoLeftForSplitMode = False
-defaultSplitDelimiter=' '
+defaultSplitDelimiter = ' '
 
 #escapeSchema specify a pair of opening and closing tags that denote a seperate meaning from the literal text in computer code. Examples are <> [] and {}. Use a dictionary instead of a list to more strongly associate each pair.
 defaultEscapeSchema = {}
-defaultEscapeSchema[ '<' ] = '>'
-defaultEscapeSchema[ '[' ] = ']'
-defaultEscapeSchema[ '{' ] = '}'
+defaultEscapeSchema[ '<' ] = '>' # half-width version
+defaultEscapeSchema[ '＜' ] = '＞' # full-width version
+#defaultEscapeSchema[ '(' ] = ')' # These are used a lot in text, so these are very situational.
+#defaultEscapeSchema[ '（' ] = '）' # These are used a lot in text, so these are very situational.
+defaultEscapeSchema[ '[' ] = ']' # half-width version
+defaultEscapeSchema[ '［' ] = '］' # full-width version
+defaultEscapeSchema[ '{' ] = '}' # half-width verision
+defaultEscapeSchema[ '｛' ] = '｝' # full-width version
 
 # escapeSequences are one off special series of characters that need to be removed and sometimes replaced with something else in order for strings to carry their intended meaning. The most common ones begin with \ such as \n, \N, \uxxx, \oxx, \xxx.
 # escapeSequences that are always inside of escapeSchema should not be included here.
@@ -101,15 +106,15 @@ r'\U'   # Requires special handling.
 
 # http://www.tcax.org/docs/ass-specs.htm
 # TODO: This part.
-assSubtitlesEscapeSequences = []
+assSubtitlesEscapeSequences = [ ]
 
 # https://docs.fileformat.com/video/srt/
 # TODO: This part.
-srtSubtitlesEscapeSequences = []
+srtSubtitlesEscapeSequences = [ ]
 
-userDefinedEscapeSequences = []
+userDefinedEscapeSequences = [ ]
 
-alphabetEscapeSequences = []
+alphabetEscapeSequences = [ ]
 for i in string.ascii_lowercase:
     alphabetEscapeSequences.append( '\\' + i )
 for i in string.ascii_uppercase:
@@ -126,11 +131,11 @@ class EscapeText:
             self.escapeSchema = defaultEscapeSchema
         else:
             # Then the user specified something.
-            if isinstance( escapeSchema, (list, tuple) ):
+            if isinstance( escapeSchema, ( list, tuple ) ):
                 # This must specify pairs of values or it will error out.
                 for entry in escapeSchema:
-                    assert( len(entry) == 2 )
-                    self.escapeSchema[ entry[0] ] = entry[1]
+                    assert( len( entry ) == 2 )
+                    self.escapeSchema[ entry[ 0 ] ] = entry[ 1 ]
             elif isinstance( escapeSchema, dict ):
                 # Blindly assume everything is fine.
                 self.escapeSchema = escapeSchema
@@ -143,21 +148,21 @@ class EscapeText:
         self.escapeSequences=userDefinedEscapeSequences.copy()
         if escapeSequences != None:
             # The user specified something. Valid entries are a list or tuple where each entry consists of an escape sequence, 'python', 'srt, 'ass'.
-            if isinstance(escapeSequences, (tuple, list) ):
+            if isinstance( escapeSequences, ( tuple, list ) ):
                 for entry in escapeSequences:
                     #print(escapeSequences)
                     #if not entry in escapeSequences:
                     self.escapeSequences.append( entry )
-            elif isinstance(escapeSequences, str):
+            elif isinstance( escapeSequences, str ):
                 if escapeSequences == 'python':
-                    self.escapeSequences=pythonEscapeSequences
+                    self.escapeSequences = pythonEscapeSequences
                     self.escapeSequencesIncludePython = True
                 elif escapeSequences == 'ass':
-                    self.escapeSequences=assSubtitlesEscapeSequences
+                    self.escapeSequences = assSubtitlesEscapeSequences
                 elif escapeSequences == 'srt':
-                    self.escapeSequences=srtSubtitlesEscapeSequences
+                    self.escapeSequences = srtSubtitlesEscapeSequences
                 elif escapeSequences == 'alphabet':
-                    self.escapeSequences=alphabetEscapeSequences
+                    self.escapeSequences = alphabetEscapeSequences
                 else:
                     print( ('Warning: Invalid escape sequence specified:' + escapeSequences ).encode(consoleEncoding) )
 
@@ -189,14 +194,20 @@ class EscapeText:
     # property(fget=None, fset=None, fdel=None, doc=None)
     # Basically, using the @property/property() syntax instead of defining asAList as a static value allows for it to return an updated value whenever the state of the object changes. Library authors also use it to maintain backwards compatibility.
     #@property
-    #def asAList(self):
-    def get_asAList(self):
-        return self.convertStringToList( self.string )
+    #def asAList( self ):
+    def get_asAList( self ):
+        # convertStringToList() sometimes returns empty strings as list items. This is a lazy fix to that bug.
+        tempList = [ ]
+        tempList2 = self.convertStringToList( self.string )
+        for entry in tempList2:
+            if entry != '':
+                tempList.append( entry )
+        return tempList
 
     #@asAList.setter
     #def asAList(self, value):
-    def set_asAList(self, value):
-        self._asAList=value
+    def set_asAList( self, value ):
+        self._asAList = value
 
     # This syntax is the same as using @property + @asAList.setter, but more explicit.
     asAList = property( get_asAList, set_asAList )
@@ -260,14 +271,14 @@ class EscapeText:
     # Bug: There is this bug where if multiple escape schema are in one line, then only the first one detected will be removed. # Update fixed. Problem was not clearing  currentLowestIndex = [ None, None ]  on every iteration of the loop.
     # New bug: Sometimes, but not always, an empty string gets appended when going from print(tempList) \n assert( schemaFoundCounter == 0 ) -> end of escapeSequences processing code when a text entry consists solely of an escapeSequence.
     def convertStringToList( self, string ):
-        schemaFoundCounter=0
+        schemaFoundCounter = 0
         for key,value in self.escapeSchema.items():
             if ( string.find( key ) != -1 ) and ( string.find( value ) != -1 ):
                 schemaFoundCounter = schemaFoundCounter + string.count( key )
 
         #print( 'schemaFoundCounter=' + str(schemaFoundCounter) )
         schemaFoundCounterBackup = schemaFoundCounter
-        tempList=[]
+        tempList = []
         if schemaFoundCounter == 0:
             tempList.append( string )
         #else:
@@ -410,8 +421,8 @@ class EscapeText:
     # As parts are extracted, add the parts to the list.
     # if the last character in the string is not a blank space ' ', then adjust the index left or right based upon goLeftForSplitMode boolean.
     # TODO: There should be special handling for escape schema and sequences that appear at the start and end of the string to boost insertion accuracy in these cases.
-    def convertTranslatedStringToList(self, translatedString):
-        originalStringInAList=[]
+    def convertTranslatedStringToList( self, translatedString ):
+        originalStringInAList = [ ]
         for i in self.asAList:
             if isinstance( i, str ):
                 originalStringInAList.append( i )
@@ -421,7 +432,7 @@ class EscapeText:
         tempString = ''
         for i in originalStringInAList:
             tempString = tempString + i
-        originalStringLength=len( tempString )
+        originalStringLength = len( tempString )
 
         translatedStringAfterBeingSplit = []
 
@@ -433,36 +444,36 @@ class EscapeText:
             previousPartLength = 0
             previousPartEndIndex = 0
             for i in range( numberOfPartsToSplit ):
-                currentPart=originalStringInAList[i]
-                currentPartLengthRaw = int( len(currentPart) / originalStringLength * len(translatedString) )
-                #print( 'len(currentPart)=', len(currentPart) )
-                #print( 'len(originalStringLength)=', originalStringLength )
-                #print( 'len(translatedString)=', len(translatedString) )
-                #print( len(currentPart) / originalStringLength * len(translatedString) )
+                currentPart = originalStringInAList[ i ]
+                currentPartLengthRaw = int( len( currentPart ) / originalStringLength * len( translatedString ) )
+                #print( 'len( currentPart )=', len( currentPart ) )
+                #print( 'len( originalStringLength )=', originalStringLength )
+                #print( 'len( translatedString )=', len( translatedString ) )
+                #print( len( currentPart ) / originalStringLength * len( translatedString ) )
 
                 # The point of this highly confusing code block is to round up or down based upon the factional part of currentPartLengthRaw like 23.67 -> 24, instead of int(23.67) -> 23, so the approximate index is as accurate as possible which should mean more accurate splits.
-                currentPartLengthRawFraction=( len(currentPart) / originalStringLength * len(translatedString) ) - currentPartLengthRaw
-                #print(currentPartLengthRaw)
-                #print(currentPartLengthRawFraction)
+                currentPartLengthRawFraction=( len( currentPart ) / originalStringLength * len( translatedString ) ) - currentPartLengthRaw
+                #print( currentPartLengthRaw )
+                #print( currentPartLengthRawFraction )
                 currentPartLengthRaw = currentPartLengthRaw + int( round( currentPartLengthRawFraction, 0 ) )
-                #print(currentPartLengthRaw)
+                #print( currentPartLengthRaw )
 
                 # if the current part is not the last part, then the end index must not be -1.
                 # For the last part, the end index might be -1 for goLeftForSplitMode=False .
                 # For the first part, the end index might be -1 for goLeftForSplitMode=True .
                 if ( ( i + 1 ) != numberOfPartsToSplit ):
-                    currentPartEndIndex=self._adjustIndex( previousPartLength + currentPartLengthRaw, translatedString )
+                    currentPartEndIndex = self._adjustIndex( previousPartLength + currentPartLengthRaw, translatedString )
                     try:
                         assert( currentPartEndIndex != -1 )
-                        endResult=translatedString[ previousPartEndIndex : currentPartEndIndex ]
+                        endResult = translatedString[ previousPartEndIndex : currentPartEndIndex ]
                     except:
-                        endResult=translatedString[ previousPartEndIndex : previousPartLength + currentPartLengthRaw ]
+                        endResult = translatedString[ previousPartEndIndex : previousPartLength + currentPartLengthRaw ]
                         translatedStringAfterBeingSplit.append( endResult )
                         previousPartLength = currentPartLengthRaw
                         previousPartEndIndex = previousPartLength + currentPartLengthRaw
                         continue
                 else:
-                    endResult=translatedString[ previousPartEndIndex :  ]
+                    endResult = translatedString[ previousPartEndIndex :  ]
 
                 # Export current part.
                 translatedStringAfterBeingSplit.append( endResult )
@@ -518,10 +529,10 @@ class EscapeText:
 
 import sys
 import pathlib
-sys.path.append( str( pathlib.Path('../resources/escapeText.py').resolve().parent) )
+sys.path.append( str( pathlib.Path( '../resources/escapeText.py' ).resolve().parent ) )
 import escapeText
 
-escapeObject=escapeText.EscapeText( r'p\zie {\i0}pies{\i}, piez', escapeSequences=[r'\z'])
+escapeObject = escapeText.EscapeText( r'p\zie {\i0}pies{\i}, piez', escapeSequences=[ r'\z' ] )
 print( 'escapeObject.escapeSequences=', escapeObject.escapeSequences )
 print( 'escapeObject.string=', escapeObject.string )
 print( 'escapeObject.asAList=', escapeObject.asAList )
@@ -537,12 +548,12 @@ translatedString=r'pero bienvenido de nuevo a Elder Tale, Naotsugu.'
 translatedString=r'aber willkommen zurück bei Elder Tale, Naotsugu.'
 
 # It is possible to reuse an existing object with a new string. All the internals will also change appropriately. Fancy.
-escapeObject.string=originalString
+escapeObject.string = originalString
 print( 'escapeObject.string=', escapeObject.string )
 print( 'escapeObject.asAList=', escapeObject.asAList )
 print( 'escapeObject.text=', escapeObject.text )
 
-#escapeObject.goLeftForSplitMode=True
+#escapeObject.goLeftForSplitMode = True
 #print( 'escapeObject.string=', escapeObject.string )
 #print( 'escapeObject.asAList=', escapeObject.asAList )
 #print( 'escapeObject.text=', escapeObject.text )
@@ -551,8 +562,8 @@ print( escapeObject.convertTranslatedStringToList( translatedString ) )
 escapeObject.goLeftForSplitMode=True
 print( escapeObject.convertTranslatedStringToList( translatedString ) )
 
-print('')
-escapeObject.goLeftForSplitMode=False
+print( '' )
+escapeObject.goLeftForSplitMode = False
 print( escapeObject.getTranslatedStringWithEscapesInserted( translatedString ) ) # Beautiful.
 
 """

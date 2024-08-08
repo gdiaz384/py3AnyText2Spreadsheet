@@ -19,13 +19,13 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__ = '2024.08.06'
+__version__ = '2024.08.07'
 
 
 # Set defaults.
-#printStuff=True
-verbose=False
-debug=False
+#printStuff = True
+verbose = False
+debug = False
 
 consoleEncoding = 'utf-8'
 defaultTextFileEncoding = 'utf-8'   # Settings that should not be left as a default setting should have default prepended to them.
@@ -33,7 +33,7 @@ defaultTextFileEncoding = 'utf-8'   # Settings that should not be left as a defa
 linesThatBeginWithThisAreComments = '#'
 assignmentOperatorInSettingsFile = '='
 
-# Why yahoo? They are unlikely to go anywhere any time soon.
+# Why yahoo? They are unlikely to go anywhere any time soon, and they do not filter the requests library.
 #domainWithoutProtocolToResolveForInternetConnectivity = 'yahoo.com'
 domainWithProtocolToResolveForInternetConnectivity = 'https://yahoo.com'
 defaultTimeout = 10
@@ -42,20 +42,20 @@ inputErrorHandling = 'strict'
 #outputErrorHandling = 'namereplace'  # This gets set dynamically below.
 
 halfToFullAsciiMap={
-' ' : '\u3000', # space. In utf-8 encoded binary, it is b'\xe3\x80\x80'.
+' ' : '　', # space. aka ' ' : '\u3000'. In utf-8 encoded binary, full-width space is b'\xe3\x80\x80'.
 '!' : '！', # explamation mark
-'"' : '＂', # double quote
+#'"' : '＂', # double quote
 '#' : '＃', # number sign
 '$' : '＄', # dollar
 '%' : '％', # percent sign
 '%' : '＆', # ampersand
-'\'' : '＇', # single quote
+#'\'' : '＇', # single quote
 '(' : '（', # left open parenthesis
 ')' : '）', # right open parenthesis
 '*' : '＊', # asterisk
 '+' : '＋', # plus sign
 ',' : '，', # comma
-'-' : '－', # hyphen, minus
+#'-' : '－', # hyphen, minus
 '.' : '．', # period, dot
 '/' : '／', # slash
 '0' : '０',
@@ -133,12 +133,12 @@ halfToFullAsciiMap={
 'x' : 'ｘ',
 'y' : 'ｙ',
 'z' : 'ｚ',
-'{' : '', # left/opening brace
-'|' : '', # verical bar, pipe
-'}' : '', # right/closing brace
-'~' : '', # equivalency sign, tilde
+'{' : '｛', # left/opening brace
+'|' : '｜', # verical bar, pipe
+'}' : '｝', # right/closing brace
+'~' : '～', # equivalency sign, tilde
 # TODO: Extended characters.
-'€' : '€',
+#'€' : '€',
 '…' : '…', # elipses
 }
 
