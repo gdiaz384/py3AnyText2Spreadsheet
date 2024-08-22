@@ -145,7 +145,7 @@ class EscapeText:
         self.escapeSequencesIncludeAss = False
         self.escapeSequencesIncludeSrt = False
 
-        self.escapeSequences=userDefinedEscapeSequences.copy()
+        self.escapeSequences = userDefinedEscapeSequences.copy()
         if escapeSequences != None:
             # The user specified something. Valid entries are a list or tuple where each entry consists of an escape sequence, 'python', 'srt, 'ass'.
             if isinstance( escapeSequences, ( tuple, list ) ):

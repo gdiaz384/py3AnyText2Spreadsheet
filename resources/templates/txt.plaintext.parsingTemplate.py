@@ -132,7 +132,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
     temporaryList = []
     for currentLineNumber,line in enumerate( inputFileContents ):
         # Skip empty lines.
-        if line.strip () == '':
+        if line.strip() == '':
             continue
         line = line.strip()
         tempSpeaker = None

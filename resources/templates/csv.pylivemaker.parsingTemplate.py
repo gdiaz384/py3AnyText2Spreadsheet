@@ -97,18 +97,18 @@ Summary:
 Column A should be the extracted rawText.
 Column B should be the speaker (if any). If there is none, then leave this column blank. If possible, use the characterDictionary to translate any raw names into their translated forms as this is more convenient to translate + edit.
 Column C should be any metadata required to validate and reinsert the contents of Column A and B back into the source text.
-As a suggestion for Column C, use the line numbers the input is taken from or the order the input is parsed in, and any other data that is unique to that entry.
+As a suggestion for Column C, use the line numbers the input is taken from or the order the input is parsed in and any other data that is unique to that entry.
 Example lists that represent a row for different types of data:
 [ 'It is all I can do to hold them off!', None, 15 ]  # .ssa subtitles ; Column C is the entry number. 
 [ 'Yes, sir!', 'speaker1', '19_True' ]     # srt subtitles ; Column C is the entry number and if the original entry was split for translation due to multiple speakers appearing in the same entry.
-[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; .ebook ; Column C is the filename_css search tag_entry number, with _ being used as a delimter.
+[ '「勉強ねぇ」', None, 'p-009_body p_288' ]  # .ebook ; Column C is the filename_css search tag_entry number, with _ being used as a delimter.
 """
 
 
 def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     if debug == True:
-        print( ( 'characterDictionary=' + str(characterDictionary) ).encode(consoleEncoding) )
+        print( ( 'characterDictionary=' + str( characterDictionary ) ).encode( consoleEncoding ) )
 
     # Unpack some variables.
     if 'fileEncoding' in settings:
@@ -117,7 +117,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
         fileEncoding = defaultTextEncoding
 
     if 'parseSettingsDictionary' in settings:
-        parseSettingsDictionary = settings['parseSettingsDictionary']
+        parseSettingsDictionary = settings[ 'parseSettingsDictionary' ]
     else:
         parseSettingsDictionary = None
 
@@ -164,7 +164,7 @@ def input( fileNameWithPath, characterDictionary=None, settings={} ):
 
     # Add data entries.
     for entry in temporaryList:
-        mySpreadsheet.appendRow( [ entry[ 0 ], entry[ 1 ], entry[ 2 ] ])
+        mySpreadsheet.appendRow( [ entry[ 0 ], entry[ 1 ], entry[ 2 ] ] )
 
     if debug == True:
         mySpreadsheet.printAllTheThings()

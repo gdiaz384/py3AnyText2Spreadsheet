@@ -2,23 +2,21 @@
 # -*- coding: UTF-8 -*-
 """
 Description:
-py3AnyText2Spreadsheet supports Python parsing scripts that can convert various formats, like .epub, .srt, .ass, .ks, .json, and so forth to and from spreadsheet formats, .csv, .xlsx, .xls, .ods, .tsv.
+py3AnyText2Spreadsheet supports Python parsing scripts that can convert various formats, like .txt, .epub, .srt, .ass, .ks, .json, to and from spreadsheet formats, .csv, .xlsx, .xls, .ods, .tsv.
 
 Concept art:
-The idea is if py3AnyText2Spreadsheet called directly as 'python py3AnyText2Spreadsheet.py --file input', then it should output .csv and .xlsx files instead.
-for py3AnyText2Spreadsheet to act as a proxy to call upon various types of parsing scripts that always returns and accepts a chocolate.Strawberry().
-If imported as a library, then it should just act as a proxy for the parsing script.
+The idea is if py3AnyText2Spreadsheet is called as 'python py3AnyText2Spreadsheet.py input file.txt parser.py', then it should output .csv and .xlsx files.
+py3AnyText2Spreadsheet acts as a proxy to call upon various types of parsing scripts that always returns and accepts a chocolate.Strawberry().
 
 import resources.py3AnyText2Spreadsheet
-spreadsheet = resources.py3AnyText2Spreadsheet('resources\py3AnyText2Spreadsheet\resources\ks.kag3.kirikiri.parsingTemplate.py')
+spreadsheet = resources.py3AnyText2Spreadsheet( 'resources\py3AnyText2Spreadsheet\resources\ks.kag3.kirikiri.parsingTemplate.py' )
 
 For cross language support of parsing files, this program should probably support something like: https://github.com/Distributive-Network/PythonMonkey
 Then again, Python is very easy to use.
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
-
 """
-__version__ = '2024.07.17 alpha'
+__version__ = '2024.08.07 alpha'
 
 
 # Set defaults.
@@ -69,6 +67,10 @@ if sys.version_info.minor >= 5:
 elif sys.version_info.minor < 5:
     outputErrorHandling = 'backslashreplace'    
 
+# TODO:
+# Make program crash if character dictionary or another file is specified but not found.
+# Move code that replaces existing .xlsx file to main().
+# Resolve other TODOs.
 
 def createCommandLineOptions():
     commandLineParser = argparse.ArgumentParser( description='Description: Turns text files into spreadsheets using user-defined scripts. If mode is set to input, then parsingProgram.input() will be called. If mode is set to output, then parsingProgram.output() will be called.' + usageHelp )
@@ -89,7 +91,7 @@ def createCommandLineOptions():
     commandLineParser.add_argument( '-cnd', '--characterNamesDictionary', help='Optional character dictionary containing the names of the characters. Using aliases is likely better than the actual translated names because entries will be reverted during translation.', default=None, type=str )
     commandLineParser.add_argument( '-cnde', '--characterNamesDictionaryEncoding', help='Specify the encoding of the character dictionary file.', default=None, type=str )
 
-    commandLineParser.add_argument( '-trf', '--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str )
+    commandLineParser.add_argument( '-o', '--translatedRawFile', help='Specify the output file name and path for the translatedRawFile. Only valid for mode=output.', default=None, type=str )
     commandLineParser.add_argument( '-trfe', '--translatedRawFileEncoding', help='Specify the encoding of translatedRawFile.', default=None, type=str )
 
     commandLineParser.add_argument( '-c', '--columnToUseForReplacements', help='Specify the column in the spreadsheet to use for replacements. Can be an integer starting with 1 or the name of the column header. Case sensitive. Only valid for mode=output.', default=None, type=str ) # This lacks a type= declaration. Is that needed? #Update: If no type declaration is used, then str is assumed. Just make it explicit then.
@@ -185,8 +187,9 @@ def validateUserInput( userInput ):
 
         if functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) == True:
             # Rename to .backup because it will be replaced.
-            pathlib.Path( userInput[ 'spreadsheetFileName' ] ).replace( userInput[ 'spreadsheetFileName' ] + '.backup' )
-            print ( ( 'Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] ).encode( consoleEncoding ) )
+            if userInput[ 'testRun' ] != True:
+                pathlib.Path( userInput[ 'spreadsheetFileName' ] ).replace( userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] )
+                print ( ( 'Info: '+ userInput[ 'spreadsheetFileName' ] + ' moved to ' + userInput[ 'spreadsheetFileName' ] + '.backup' + userInput[ 'spreadsheetExtension' ] ).encode( consoleEncoding ) )
         #elif functions.checkIfThisFileExists( userInput[ 'spreadsheetFileName' ] ) != True:
         #else:
         # Update: Then user specified an output file that does not exist yet. That makes sense. All is well.

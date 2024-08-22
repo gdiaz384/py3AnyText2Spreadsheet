@@ -8,7 +8,7 @@ import resources.functions as functions
 # Or to import directly:
 # import sys
 # import pathlib
-# sys.path.append( str( pathlib.Path('C:\\resources\\functions.py').resolve().parent) )
+# sys.path.append( str( pathlib.Path('C:\\resources\\functions.py').resolve().parent ) )
 # import functions
 functions.verifyThisFileExists()
 
@@ -19,7 +19,7 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__ = '2024.08.07'
+__version__ = '2024.08.22'
 
 
 # Set defaults.
@@ -38,10 +38,9 @@ assignmentOperatorInSettingsFile = '='
 domainWithProtocolToResolveForInternetConnectivity = 'https://yahoo.com'
 defaultTimeout = 10
 
-inputErrorHandling = 'strict'
-#outputErrorHandling = 'namereplace'  # This gets set dynamically below.
-
-halfToFullAsciiMap={
+defaultWordWrapLength = 60
+defaultWordWrapMaxNumberOfLines = 3
+halfWidthAsciiToFullWidthMap={
 ' ' : '　', # space. aka ' ' : '\u3000'. In utf-8 encoded binary, full-width space is b'\xe3\x80\x80'.
 '!' : '！', # explamation mark
 #'"' : '＂', # double quote
@@ -142,6 +141,9 @@ halfToFullAsciiMap={
 '…' : '…', # elipses
 }
 
+inputErrorHandling = 'strict'
+#outputErrorHandling = 'namereplace'  # This gets set dynamically below.
+
 usageHelp = '\n Usage: python py3AnyText2Spreadsheet --help'
 
 
@@ -171,6 +173,69 @@ if sys.version_info.minor >= 5:
     outputErrorHandling = 'namereplace'
 elif sys.version_info.minor < 5:
     outputErrorHandling = 'backslashreplace'    
+
+
+def wordWrap( string, maximumNumberOfLines=defaultWordWrapMaxNumberOfLines, wordWrapLength=defaultWordWrapLength, forceOutputToMatchMaxLines=False ):
+    #print( len( string ) )
+    string = string.strip()
+    tempString = ''
+    if len(string) <= wordWrapLength:
+        return string
+    #else:
+    originalString = string
+
+    # range( start, stop, step )
+    for i in range( 0, maximumNumberOfLines, 1 ):
+        # if processing the last line, then just append the leftovers and return.
+        if i + 1 == maximumNumberOfLines:
+            #tempString = tempString + '\n' + string
+            tempString = tempString + ' ' + string
+            break
+
+        adjustedIndex = string[ : wordWrapLength ].rfind( ' ' )
+        if adjustedIndex == -1:
+            currentLine = string[ : wordWrapLength ].strip()
+            string = string[ wordWrapLength : ].strip()
+        else:
+            currentLine = string[ : adjustedIndex ].strip()
+            string = string[ adjustedIndex : ].strip()
+
+        if tempString == '':
+            tempString = currentLine
+        else:
+            # if this is the last line and it is smaller than wordWrapLength, then do not insert another \n.
+            if len(currentLine) < int( (wordWrapLength)/1.25): # This is a huristic to detect if the last line is smaller than some % of wordWrapLength, like wordWrapLength * 0.85
+                tempString = tempString + ' ' + currentLine
+            else:
+                tempString = tempString + '\n' + currentLine
+
+        if string == '':
+            break
+
+    if forceOutputToMatchMaxLines == True:
+        if maximumNumberOfLines == 1:
+            return tempString.replace( '\n', ' ' ).replace( '  ', ' ' )
+
+        count = tempString.count( '\n' ) + 1
+        if count != maximumNumberOfLines:
+            splitAmount = int( len( originalString ) / maximumNumberOfLines )
+            #print( 'splitAmount=', splitAmount )
+            tempString = ''
+            for i in range( 0, maximumNumberOfLines, 1 ):
+                if i == 0:
+                    tempString = originalString[ splitAmount * i : splitAmount * ( i + 1 ) ]
+                    #print(tempString)
+                    #tempString = originalString[ splitAmount * ( i + 1 ) : ]
+                    #print(tempString)
+                    #print( splitAmount * ( i + 1 ) )
+                else:
+                    #print( splitAmount * ( i + 1 ) )
+                    if ( i + 1 ) == maximumNumberOfLines:
+                        tempString = tempString + '\n' + originalString[ splitAmount * i : ]
+                    else:
+                        tempString = tempString + '\n' + originalString[ splitAmount * i : splitAmount * ( i + 1 ) ]
+
+    return tempString
 
 
 def checkEncoding( string, encoding ):
@@ -203,8 +268,8 @@ def halfToFullWidthAscii( string ):
     tempString=''
     error = False
     for i in string:
-        if i in halfToFullAsciiMap.keys():
-            tempString=tempString + halfToFullAsciiMap[ i ]
+        if i in halfWidthAsciiToFullWidthMap.keys():
+            tempString=tempString + halfWidthAsciiToFullWidthMap[ i ]
         else:
             tempString=tempString + i
             if error == False:
@@ -228,11 +293,11 @@ def fullToHalfWidthAscii( string ):
     tempString=''
     error = False
     for i in string:
-        if i in halfToFullAsciiMap.values():
+        if i in halfWidthAsciiToFullWidthMap.values():
             # Slow. Is there a better way of doing this? No right?
-            for key,value in halfToFullAsciiMap.items():
+            for key,value in halfWidthAsciiToFullWidthMap.items():
                 if i == value:
-                    tempString=tempString + key
+                    tempString = tempString + key
                     break
         else:
             tempString = tempString + i

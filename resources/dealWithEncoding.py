@@ -4,7 +4,7 @@
 Description: This is a small helper library to help with dealing with text encoding in files. Uses the chardet library if it is available.
 
 TODO: Consider using https://pypi.org/project/charset-normalizer and/or https://pypi.org/project/charamel/
-Update: It looks like chardet already has the best detection rates for cp932, so just do nothing instead. Low priority to update this library.
+Update: It looks like chardet already has the best detection rates for cp932/shift-jis, so just do nothing instead. Low priority to update this library.
 Ideally, charamel and charset-normalizer should be used if chardet is not available. charamel seems to be more accurate than charset-normalizer, so use that as next highest priority.
 
 Docs:
