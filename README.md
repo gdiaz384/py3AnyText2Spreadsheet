@@ -31,11 +31,12 @@ Formats currently semi-supported:
 
 ## Support is planned for:
 
-- Markdown.
-- python.py files.
-- KAG3 used in TyranoBuilder (.ks/.ts?) and kirikiriz.
-- RPGM (MZ, MV, Ace, XP... ) # The dream.
 - Better documentation.
+- KAG3 used in TyranoBuilder (.ks/.ts?) and kirikiriz.
+- Markdown.
+- NScripter/ONScripter
+- RPGM (MZ, MV, Ace, XP... ) # The dream.
+- python.py files.
 
 ## Maybe:
 
@@ -76,7 +77,7 @@ File name | Description | Examples
 
 ## Installation guide
 
-`Current version: 2024.07.17 alpha`
+`Current version: 2024.08.24 alpha`
 
 Alpha means the software is undergoing radical changes and core features are still under development.
 
@@ -108,7 +109,7 @@ Alpha means the software is undergoing radical changes and core features are sti
 
 ## Release Notes:
 
-- Since Python is especially very easy to work with, it is used as the default language.
+- Since Python is very easy to work with, it is used as the default language.
 - In accordance with the project goals, parser readability and portability within an engine is a major concern but parsing speed is not.
 - The use of regex is limited to cases where it is absolutely required. [Regular expressions](//wikipedia.org/wiki/Regular_expression) are fundamentally very cryptic and very difficult to debug. In contrast, writing a proper input parser from scratch hardly takes an afternoon, especially with the templates provided. They are easy to extend as well.
 - Spreadsheets are used as the interchange format between parsing and translation since the layout makes logical sense for translation, however the parsers could easily be extended to support json or other arbitrary formats in order to work with other translation software beyond py3TranslateLLM.

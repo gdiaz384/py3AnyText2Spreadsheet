@@ -19,7 +19,7 @@ Notes: Only functions that do not use module-wide variables and have return valu
 Copyright (c) 2024 gdiaz384; License: See main program.
 
 """
-__version__ = '2024.08.22'
+__version__ = '2024.08.24'
 
 
 # Set defaults.
@@ -175,11 +175,12 @@ elif sys.version_info.minor < 5:
     outputErrorHandling = 'backslashreplace'    
 
 
-def wordWrap( string, maximumNumberOfLines=defaultWordWrapMaxNumberOfLines, wordWrapLength=defaultWordWrapLength, forceOutputToMatchMaxLines=False ):
+# This assumes string has no \n and will try to insert them based upon wordWrapLength up to the maximumNumberOfLines. There is no gurantee the output will have a certain number of lines. To gurantee that, set forceOutputToMatchMaxLines=True. Currently, if forceOutputToMatchMaxLines == True, then the output can potentially be very ugly.
+def wordWrap( string, wordWrapLength=defaultWordWrapLength, maximumNumberOfLines=defaultWordWrapMaxNumberOfLines, forceOutputToMatchMaxLines=False ):
     #print( len( string ) )
     string = string.strip()
     tempString = ''
-    if len(string) <= wordWrapLength:
+    if ( ( len(string) <= wordWrapLength ) or ( maximumNumberOfLines == 1 ) ) and ( forceOutputToMatchMaxLines == False ):
         return string
     #else:
     originalString = string
@@ -213,8 +214,8 @@ def wordWrap( string, maximumNumberOfLines=defaultWordWrapMaxNumberOfLines, word
             break
 
     if forceOutputToMatchMaxLines == True:
-        if maximumNumberOfLines == 1:
-            return tempString.replace( '\n', ' ' ).replace( '  ', ' ' )
+        #if maximumNumberOfLines == 1:
+        #    return tempString.replace( '\n', ' ' ).replace( '  ', ' ' )
 
         count = tempString.count( '\n' ) + 1
         if count != maximumNumberOfLines:
@@ -294,7 +295,7 @@ def fullToHalfWidthAscii( string ):
     error = False
     for i in string:
         if i in halfWidthAsciiToFullWidthMap.values():
-            # Slow. Is there a better way of doing this? No right?
+            # Slow. Is there a better way of doing this? No right? # Update: The way to do this faster is to use the same dictionary but mapped the reverse way. Always keeping the correct mapping table in memory will speed up processing here.
             for key,value in halfWidthAsciiToFullWidthMap.items():
                 if i == value:
                     tempString = tempString + key

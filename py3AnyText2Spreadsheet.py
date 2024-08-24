@@ -16,7 +16,7 @@ Then again, Python is very easy to use.
 
 Copyright (c) 2024 gdiaz384 ; License: GNU Affero GPL v3. https://www.gnu.org/licenses/agpl-3.0.html
 """
-__version__ = '2024.08.07 alpha'
+__version__ = '2024.08.24 alpha'
 
 
 # Set defaults.
@@ -77,7 +77,7 @@ def createCommandLineOptions():
     commandLineParser.add_argument( 'mode', help='Must be input or output.', type=str )
 
     commandLineParser.add_argument( 'rawFile', help='Specify the text file to parse.', type=str )
-    commandLineParser.add_argument( '-fe','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str )
+    commandLineParser.add_argument( '-rfe','--rawFileEncoding', help='Specify the encoding of the rawFile.', default=None, type=str )
 
     commandLineParser.add_argument( 'parsingProgram', help='Specify the .py script that will be used to parse rawFile.', type=str )
     commandLineParser.add_argument( '-pse', '--parsingProgramEncoding', help='Specify the encoding of the parsingProgram.', default=None,type=str )
@@ -267,8 +267,9 @@ def validateUserInput( userInput ):
     # Try to detect line endings from the original file so it can be used for output.
     # dealWithEncoding.detectLineEndingsFromFile() returns a tuple like ( 'windows', '\r\n' ) or ( 'unix', '\n' ) .
     detectedLineEndings = dealWithEncoding.detectLineEndingsFromFile( userInput[ 'rawFileName' ], userInput[ 'rawFileEncoding' ] )
-    #print( 'detectedLineEndings=' + detectedLineEndings[0] )
+    print( 'detectedLineEndings=' + detectedLineEndings[0] )
     userInput[ 'rawFileLineEndings' ] = detectedLineEndings[1]
+    #print( userInput[ 'rawFileLineEndings' ].encode( consoleEncoding ) )
 
     if debug == True:
         print( 'userInput[characterDictionary]=' + str( userInput[ 'characterDictionary' ] ) )
@@ -396,11 +397,11 @@ def main( userInput=None ):
             wroteFile = True
         elif isinstance( translatedTextFile, str ) == True:
             #userInput exists
-            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline=userInput[ 'rawFileLineEndings' ] ) as myFileHandle:
-                myFileHandle.write(translatedTextFile)
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline='' ) as myFileHandle:
+                myFileHandle.write( translatedTextFile.replace( '\n', userInput[ 'rawFileLineEndings' ] ) )
             wroteFile = True
         elif isinstance( translatedTextFile, list ) == True:
-            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline=userInput[ 'rawFileLineEndings' ] ) as myFileHandle:
+            with open( userInput[ 'translatedRawFileName' ], 'w', encoding=userInput[ 'translatedRawFileEncoding' ], errors=outputErrorHandling, newline='' ) as myFileHandle:
                 for entry in translatedTextFile:
                     # This might corrupt the output on Linux/Unix or vica-versa on Windows if the software is expecting and requires a specific type of newline \r\n or \n.
                     # By default, Python will translate \n based upon the host OS, not what the software that will actually read the file is expecting because it cannot possibly know that, therefore this is a potential source of corruption.
@@ -416,7 +417,7 @@ def main( userInput=None ):
 
         if wroteFile == True:
             # chocolate.Strawberry() will print out its own confirmation of writing out the file on its own, so do not duplicate that message here.
-            if ( checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
+            if ( functions.checkIfThisFileExists( userInput[ 'translatedRawFileName' ] ) == True ) and ( isinstance( translatedTextFile, chocolate.Strawberry ) == False ):
                 print( ( 'Wrote: ' + userInput[ 'translatedRawFileName' ] ).encode( consoleEncoding ) )
 
 
