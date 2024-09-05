@@ -262,7 +262,9 @@ def validateUserInput( userInput ):
 
     userInput[ 'parseSettingsFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'parseSettingsFile'], userInput[ 'parseSettingsFileEncoding' ], defaultTextFileEncoding )
     userInput[ 'spreadsheetFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'spreadsheetFileName'], userInput[ 'spreadsheetFileEncoding' ], defaultTextFileEncoding )
-    userInput[ 'translatedRawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'translatedRawFileName'], userInput[ 'translatedRawFileEncoding' ], defaultTextFileEncoding )
+    if userInput[ 'translatedRawFileEncoding' ] == None:
+        userInput[ 'translatedRawFileEncoding' ] = userInput[ 'rawFileEncoding' ]
+#    userInput[ 'translatedRawFileEncoding' ] = dealWithEncoding.ofThisFile( userInput[ 'translatedRawFileName'], userInput[ 'translatedRawFileEncoding' ], userInput[ 'rawFileEncoding' ] )
 
     # Try to detect line endings from the original file so it can be used for output.
     # dealWithEncoding.detectLineEndingsFromFile() returns a tuple like ( 'windows', '\r\n' ) or ( 'unix', '\n' ) .
@@ -279,7 +281,7 @@ def validateUserInput( userInput ):
 
 # This returns either None or a dictionary of the contents of parsingProgram.ini.  It will try to infer thename
 def getParseSettingsDictionary( parsingProgram, parseSettingsFile=None, parseSettingsFileEncoding=defaultTextFileEncoding ):
-    parsingScriptObject=pathlib.Path( parsingProgram ).absolute()
+    parsingScriptObject = pathlib.Path( parsingProgram ).absolute()
 
     if parseSettingsFile == None:
         #check to see if settings file exists.
@@ -329,7 +331,7 @@ def main( userInput=None ):
 
     parsingScriptObject = pathlib.Path( userInput['parsingProgram'] ).resolve()
     global tempParseScriptPathAndName
-    tempParseScriptPathAndName = str( pathlib.Path(__file__).resolve().parent ) + '/' + tempParseScriptPathAndName
+    tempParseScriptPathAndName = str( pathlib.Path( __file__ ).resolve().parent ) + '/' + tempParseScriptPathAndName
     #print( 'tempParseScriptPathAndName=' + tempParseScriptPathAndName )
 
     pathlib.Path( tempParseScriptPathAndName ).resolve().parent.mkdir( parents = True, exist_ok = True )

@@ -40,22 +40,24 @@ defaultTimeout = 10
 
 defaultWordWrapLength = 60
 defaultWordWrapMaxNumberOfLines = 3
+# The main use of this is to convert half-width characters to full-width shift-jis compatible characters.
+# https://www.fileformat.info/info/charset/Shift_JIS/list.htm
 halfWidthAsciiToFullWidthMap={
 ' ' : '　', # space. aka ' ' : '\u3000'. In utf-8 encoded binary, full-width space is b'\xe3\x80\x80'.
 '!' : '！', # explamation mark
-#'"' : '＂', # double quote
+#'"' : '＂', # double quote # Not valid shift-jis.
 '#' : '＃', # number sign
 '$' : '＄', # dollar
 '%' : '％', # percent sign
 '%' : '＆', # ampersand
-#'\'' : '＇', # single quote
+#'\'' : '＇', # single quote  # Not valid shift-jis.
 '(' : '（', # left open parenthesis
 ')' : '）', # right open parenthesis
 '*' : '＊', # asterisk
 '+' : '＋', # plus sign
 ',' : '，', # comma
 #'-' : '－', # hyphen, minus
-'.' : '．', # period, dot
+'.' : '。', # '．', # period, dot
 '/' : '／', # slash
 '0' : '０',
 '1' : '１',
@@ -135,11 +137,17 @@ halfWidthAsciiToFullWidthMap={
 '{' : '｛', # left/opening brace
 '|' : '｜', # verical bar, pipe
 '}' : '｝', # right/closing brace
-'~' : '～', # equivalency sign, tilde
+'~' : '～', # equivalency sign, tilde, wave dash
 # TODO: Extended characters.
 #'€' : '€',
-'…' : '…', # elipses
+'...' : '…', # elipses
+'_','＿',
 }
+# Curly quotes should probably be mapped to '「' and '」' . And the single ones to the double variant.
+
+fullWidthToHalfWidthAsciiMap={}
+for key,item in halfWidthAsciiToFullWidthMap.items():
+    fullWidthToHalfWidthAsciiMap[ item ] = key
 
 inputErrorHandling = 'strict'
 #outputErrorHandling = 'namereplace'  # This gets set dynamically below.
@@ -239,6 +247,7 @@ def wordWrap( string, wordWrapLength=defaultWordWrapLength, maximumNumberOfLines
     return tempString
 
 
+# This returns True or False depending upon if the string can be encoded using the target encoding.
 def checkEncoding( string, encoding ):
     try:
         string.encode( encoding )
@@ -266,7 +275,7 @@ def halfToFullWidthAscii( string ):
     if string == '':
         return ''
 
-    tempString=''
+    tempString = ''
     error = False
     for i in string:
         if i in halfWidthAsciiToFullWidthMap.keys():
@@ -291,15 +300,16 @@ def fullToHalfWidthAscii( string ):
     if string == '':
         return ''
 
-    tempString=''
+    tempString = ''
     error = False
     for i in string:
-        if i in halfWidthAsciiToFullWidthMap.values():
-            # Slow. Is there a better way of doing this? No right? # Update: The way to do this faster is to use the same dictionary but mapped the reverse way. Always keeping the correct mapping table in memory will speed up processing here.
-            for key,value in halfWidthAsciiToFullWidthMap.items():
-                if i == value:
-                    tempString = tempString + key
-                    break
+        if i in fullWidthToHalfWidthAsciiMap.keys():
+            # Slow. Is there a better way of doing this? No right? # Update: The way to do this faster is to use the same dictionary but mapped the reverse way. Always keeping the correct mapping table in memory will speed up processing here. # Update2: Done.
+            #for key,value in fullWidthToHalfWidthAsciiMap.items():
+            #    if i == value:
+            #        tempString = tempString + key
+            #        break
+            tempString = tempString + fullWidthToHalfWidthAsciiMap[ i ]
         else:
             tempString = tempString + i
             if error == False:

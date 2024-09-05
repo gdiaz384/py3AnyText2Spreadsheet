@@ -88,7 +88,7 @@ def ofThisFile( myFileName, userInputForEncoding=None, fallbackEncoding=defaultT
         return fallbackEncoding
 
     # Check if the file exists.
-    if os.path.isfile(myFileName) != True:
+    if os.path.isfile( myFileName ) != True:
         # if the user did not specify an encoding and if the file does not exist, just return the fallbackEncoding
         if ( printStuff == True ) and ( verbose == True ):
             print( ( 'Warning: The file:\'' + myFileName + '\' does not exist. Returning:\'' + fallbackEncoding + '\'' ).encode( consoleEncoding ) )
