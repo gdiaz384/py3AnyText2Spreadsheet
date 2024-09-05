@@ -141,7 +141,7 @@ halfWidthAsciiToFullWidthMap={
 # TODO: Extended characters.
 #'€' : '€',
 '...' : '…', # elipses
-'_','＿',
+'_' : '＿',
 }
 # Curly quotes should probably be mapped to '「' and '」' . And the single ones to the double variant.
 
@@ -195,10 +195,20 @@ def wordWrap( string, wordWrapLength=defaultWordWrapLength, maximumNumberOfLines
 
     # range( start, stop, step )
     for i in range( 0, maximumNumberOfLines, 1 ):
+        #print('apple')
         # if processing the last line, then just append the leftovers and return.
-        if i + 1 == maximumNumberOfLines:
-            #tempString = tempString + '\n' + string
-            tempString = tempString + ' ' + string
+        if ( i + 1 == maximumNumberOfLines ) or ( string == '' ):
+            tempString2 = tempString.split( '\n' )
+            previousPart=tempString2[ len(tempString2) - 1 ]
+            #print( 'len(previousPart)=',len(previousPart) )
+            #print( 'len(string)=', len(string) )
+            #print( ('tempString='+ tempString ).encode(consoleEncoding) )
+            if ( len( previousPart ) + len( string ) ) <= wordWrapLength:
+                tempString = tempString + ' ' + string
+                #print( 'pie4' )
+            else:
+                tempString = tempString + '\n' + string
+           # print( 'pie2' )
             break
 
         adjustedIndex = string[ : wordWrapLength ].rfind( ' ' )
@@ -209,14 +219,37 @@ def wordWrap( string, wordWrapLength=defaultWordWrapLength, maximumNumberOfLines
             currentLine = string[ : adjustedIndex ].strip()
             string = string[ adjustedIndex : ].strip()
 
+        #print( 'currentLine=', currentLine )
+        #print( 'string=', string )
+
         if tempString == '':
             tempString = currentLine
         else:
-            # if this is the last line and it is smaller than wordWrapLength, then do not insert another \n.
-            if len(currentLine) < int( (wordWrapLength)/1.25): # This is a huristic to detect if the last line is smaller than some % of wordWrapLength, like wordWrapLength * 0.85
-                tempString = tempString + ' ' + currentLine
+            if ( i + 1 == maximumNumberOfLines ) and ( 1 > 2 ):
+                # if this is the last line and it is smaller than wordWrapLength, then do not insert another \n.
+                if len(currentLine) < int( (wordWrapLength)/1.25): # This is a huristic to detect if the last line is smaller than some % of wordWrapLength, like wordWrapLength * 0.85
+                    tempString = tempString + ' ' + currentLine
+                else:
+                    tempString = tempString + '\n' + currentLine
             else:
                 tempString = tempString + '\n' + currentLine
+
+        #print( 'tempString=', tempString )
+
+        # if processing the last line, then just append the leftovers and return.
+        if ( i + 1 == maximumNumberOfLines ) or ( string == '' ):
+            tempString2 = tempString.split( '\n' )
+            previousPart=tempString2[ len(tempString2) - 1 ]
+            #print( 'len(previousPart)=',len(previousPart) )
+            #print( 'len(string)=', len(string) )
+            #print( ('tempString='+ tempString ).encode(consoleEncoding) )
+            if ( len( previousPart ) + len( string ) ) <= wordWrapLength:
+                tempString = tempString + ' ' + string
+                #print( 'pie4' )
+            else:
+                tempString = tempString + '\n' + string
+            #print( 'pie2' )
+            break
 
         if string == '':
             break
