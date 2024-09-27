@@ -132,8 +132,11 @@ class EscapeText:
         else:
             # Then the user specified something.
             if isinstance( escapeSchema, ( list, tuple ) ):
+                self.escapeSchema = { }
                 # This must specify pairs of values or it will error out.
+                #print( len( escapeSchema ) )
                 for entry in escapeSchema:
+                    #print(entry)
                     assert( len( entry ) == 2 )
                     self.escapeSchema[ entry[ 0 ] ] = entry[ 1 ]
             elif isinstance( escapeSchema, dict ):

@@ -298,7 +298,7 @@ def normalizeEncoding( string, encoding ):
             tempString = tempString + string[ i : i + 1 ]
         else:
             print( ( 'Warning: ' + string[ i : i + 1 ] + ' cannot be encoded to valid ' + encoding + '.' ).encode( consoleEncoding ) )
-    print( ( 'Warning: Output changed from to: \'' + tempString + '\'' ).encode( consoleEncoding ) )
+    print( ( 'Warning: Output changed to: \'' + tempString + '\'' ).encode( consoleEncoding ) )
     return tempString
 
 
